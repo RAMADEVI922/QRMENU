@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export interface MenuItem {
   id: string;
@@ -130,20 +131,22 @@ interface RestaurantStore {
   setCurrentTableId: (id: string) => void;
 }
 
-export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
-  menuItems: sampleMenu,
-  categoryImages: {},
-  addMenuItem: (item) => set((state) => ({
-    menuItems: [...state.menuItems, { ...item, id: `M${Date.now()}` }],
-  })),
-  setCategoryImage: (category, image) => set((state) => ({
-    categoryImages: { ...state.categoryImages, [category]: image },
-  })),
-  clearCategoryImage: (category) => set((state) => {
-    const next = { ...state.categoryImages };
-    delete next[category];
-    return { categoryImages: next };
-  }),
+export const useRestaurantStore = create<RestaurantStore>()(
+  persist(
+    (set, get) => ({
+      menuItems: sampleMenu,
+      categoryImages: {},
+      addMenuItem: (item) => set((state) => ({
+        menuItems: [...state.menuItems, { ...item, id: `M${Date.now()}` }],
+      })),
+      setCategoryImage: (category, image) => set((state) => ({
+        categoryImages: { ...state.categoryImages, [category]: image },
+      })),
+      clearCategoryImage: (category) => set((state) => {
+        const next = { ...state.categoryImages };
+        delete next[category];
+        return { categoryImages: next };
+      }),
   updateMenuItem: (id, updates) => set((state) => ({
     menuItems: state.menuItems.map((item) => item.id === id ? { ...item, ...updates } : item),
   })),
@@ -221,4 +224,11 @@ export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
 
   currentTableId: null,
   setCurrentTableId: (id) => set({ currentTableId: id }),
-}));
+}),
+{
+  name: 'qr-menu-store',
+  // Keep data small; large images might exceed localStorage limits.
+  // If you want to clear storage during development, run `localStorage.removeItem('qr-menu-store')`.
+}
+)
+);
