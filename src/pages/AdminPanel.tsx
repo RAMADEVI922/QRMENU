@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useRestaurantStore, type MenuItem } from '@/store/restaurantStore';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2, Edit, Menu, LayoutDashboard, UtensilsCrossed, Users, TableProperties, Receipt, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import QRCode from 'react-qr-code';
@@ -117,10 +118,10 @@ function DashboardView() {
 }
 
 function MenuManagement() {
-  const { menuItems, addMenuItem, deleteMenuItem, updateMenuItem } = useRestaurantStore();
+  const { menuItems, addMenuItem, deleteMenuItem, updateMenuItem, categoryImages, setCategoryImage, clearCategoryImage } = useRestaurantStore();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', description: '', price: '', category: '', dietary: '' });
+  const [form, setForm] = useState({ name: '', description: '', price: '', category: '', dietary: '', image: '' });
 
   const categories = [...new Set(menuItems.map((i) => i.category))];
 
@@ -130,22 +131,73 @@ function MenuManagement() {
       return;
     }
     const dietary = form.dietary ? form.dietary.split(',').map((d) => d.trim()) : undefined;
+    const image = form.image ? form.image : undefined;
     if (editingId) {
-      updateMenuItem(editingId, { name: form.name, description: form.description, price: Number(form.price), category: form.category, dietary });
+      updateMenuItem(editingId, {
+        name: form.name,
+        description: form.description,
+        price: Number(form.price),
+        category: form.category,
+        dietary,
+        image,
+      });
       toast.success('Item updated');
       setEditingId(null);
     } else {
-      addMenuItem({ name: form.name, description: form.description, price: Number(form.price), category: form.category, available: true, dietary });
+      addMenuItem({
+        name: form.name,
+        description: form.description,
+        price: Number(form.price),
+        category: form.category,
+        available: true,
+        dietary,
+        image,
+      });
       toast.success('Item added');
     }
-    setForm({ name: '', description: '', price: '', category: '', dietary: '' });
+    setForm({ name: '', description: '', price: '', category: '', dietary: '', image: '' });
     setShowForm(false);
   };
 
   const startEdit = (item: MenuItem) => {
-    setForm({ name: item.name, description: item.description, price: String(item.price), category: item.category, dietary: item.dietary?.join(', ') || '' });
+    setForm({
+      name: item.name,
+      description: item.description,
+      price: String(item.price),
+      category: item.category,
+      dietary: item.dietary?.join(', ') || '',
+      image: item.image || '',
+    });
     setEditingId(item.id);
     setShowForm(true);
+  };
+
+  const handleItemImageUpload = (itemId: string, file: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      updateMenuItem(itemId, { image: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeItemImage = (itemId: string) => {
+    updateMenuItem(itemId, { image: undefined });
+  };
+
+  const handleCategoryImageUpload = (category: string, file: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setCategoryImage(category, dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeCategoryImage = (category: string) => {
+    clearCategoryImage(category);
   };
 
   return (
@@ -168,6 +220,12 @@ function MenuManagement() {
             <input className="admin-input border border-border rounded-lg px-3 w-full bg-background" placeholder="Dietary (V, GF)" value={form.dietary} onChange={(e) => setForm({ ...form, dietary: e.target.value })} />
           </div>
           <input className="admin-input border border-border rounded-lg px-3 w-full bg-background" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <input
+            className="admin-input border border-border rounded-lg px-3 w-full bg-background"
+            placeholder="Image URL"
+            value={form.image}
+            onChange={(e) => setForm({ ...form, image: e.target.value })}
+          />
           <div className="flex gap-2">
             <Button size="sm" onClick={handleSubmit}>{editingId ? 'Update' : 'Add'}</Button>
             <Button size="sm" variant="ghost" onClick={() => { setShowForm(false); setEditingId(null); }}>Cancel</Button>
@@ -175,46 +233,117 @@ function MenuManagement() {
         </div>
       )}
 
-      <div className="border border-border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-muted/50">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Category</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Price</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {menuItems.map((item) => (
-              <tr key={item.id} className="border-t border-border">
-                <td className="px-4 py-3 font-medium">{item.name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{item.category}</td>
-                <td className="px-4 py-3 tabular-nums">₹{item.price.toLocaleString('en-IN')}</td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => updateMenuItem(item.id, { available: !item.available })}
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.available ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}
-                  >
-                    {item.available ? 'Available' : 'Unavailable'}
-                  </button>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(item)}>
-                      <Edit className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { deleteMenuItem(item.id); toast.success('Item deleted'); }}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {categories.map((cat) => (
+        <div key={cat} className="mb-8">
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <div className="flex items-center gap-3">
+              {categoryImages[cat] ? (
+                <img
+                  src={categoryImages[cat]}
+                  alt={`${cat} category`}
+                  className="h-10 w-10 rounded-lg object-cover border border-border"
+                />
+              ) : (
+                <div className="h-10 w-10 rounded-lg bg-muted/20 border border-border flex items-center justify-center text-xs text-muted-foreground">
+                  No image
+                </div>
+              )}
+              <div>
+                <h3 className="text-lg font-semibold">{cat}</h3>
+                <p className="text-xs text-muted-foreground">{menuItems.filter((item) => item.category === cat).length} items</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                className="text-xs"
+                onChange={(e) => handleCategoryImageUpload(cat, e.target.files?.[0] ?? null)}
+              />
+              {categoryImages[cat] && (
+                <Button size="sm" variant="ghost" onClick={() => removeCategoryImage(cat)}>
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="border border-border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Price</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {menuItems
+                  .filter((item) => item.category === cat)
+                  .map((item) => (
+                    <Fragment key={item.id}>
+                      <tr className="border-t border-border">
+                        <td className="px-4 py-3 font-medium">{item.name}</td>
+                        <td className="px-4 py-3 tabular-nums">₹{item.price.toLocaleString('en-IN')}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => updateMenuItem(item.id, { available: !item.available })}
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.available ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}
+                          >
+                            {item.available ? 'Available' : 'Unavailable'}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(item)}>
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { deleteMenuItem(item.id); toast.success('Item deleted'); }}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr className="bg-muted/10">
+                        <td colSpan={4} className="px-4 py-3">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div className="flex items-center gap-3">
+                              {item.image ? (
+                                <img
+                                  src={item.image}
+                                  alt={`${item.name} thumbnail`}
+                                  className="h-16 w-16 rounded-lg object-cover border border-border"
+                                />
+                              ) : (
+                                <div className="h-16 w-16 rounded-lg bg-muted/30 border border-border flex items-center justify-center text-xs text-muted-foreground">
+                                  No image
+                                </div>
+                              )}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-sm font-medium">Upload image</label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="text-xs"
+                                  onChange={(e) => handleItemImageUpload(item.id, e.target.files?.[0] ?? null)}
+                                />
+                              </div>
+                            </div>
+                            {item.image && (
+                              <Button size="sm" variant="ghost" onClick={() => removeItemImage(item.id)}>
+                                Remove image
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    </Fragment>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -266,9 +395,12 @@ function WaiterManagement() {
                 <td className="px-4 py-3 font-medium">{w.name}</td>
                 <td className="px-4 py-3 text-muted-foreground">{w.email}</td>
                 <td className="px-4 py-3">
-                  <button onClick={() => toggleWaiterStatus(w.id)} className={`text-xs px-2 py-0.5 rounded-full font-medium ${w.active ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
-                    {w.active ? 'Active' : 'Inactive'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Switch checked={w.active} onCheckedChange={() => toggleWaiterStatus(w.id)} />
+                    <span className={`text-xs font-medium ${w.active ? 'text-success' : 'text-muted-foreground'}`}>
+                      {w.active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { deleteWaiter(w.id); toast.success('Waiter removed'); }}>

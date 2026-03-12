@@ -70,6 +70,15 @@ function MenuItemCard({ item }: { item: MenuItem }) {
           )}
         </div>
       </div>
+      {item.image && (
+        <div className="mt-3">
+          <img 
+            src={item.image} 
+            alt={item.name}
+            className="w-full h-48 object-cover rounded-lg"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -154,8 +163,9 @@ function CartSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 export default function CustomerMenu() {
   const { tableId } = useParams<{ tableId: string }>();
-  const { menuItems, cart, cartTotal, setCurrentTableId, addNotification } = useRestaurantStore();
+  const { menuItems, cart, cartTotal, setCurrentTableId, addNotification, categoryImages } = useRestaurantStore();
   const [cartOpen, setCartOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // Set current table on mount
   useState(() => {
@@ -189,7 +199,7 @@ export default function CustomerMenu() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 max-w-lg mx-auto">
+    <div className="min-h-screen bg-background pb-24 max-w-5xl mx-auto">
       {/* Header */}
       <div className="px-4 pt-6 pb-2">
         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Table {tableId}</p>
@@ -206,23 +216,65 @@ export default function CustomerMenu() {
         </Button>
       </div>
 
-      {/* Menu items by category */}
-      <div>
-        {Array.from(categories).map(([category, items]) => (
-          <div key={category}>
-            <div className="sticky-category">
-              <span className="category-header">{category}</span>
+      {/* Menu: category grid or selected category items */}
+      <div className="px-4">
+        {!selectedCategory ? (
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from(categories.entries()).map(([category, items]) => {
+              const categoryImage = categoryImages[category];
+              const thumbnail = categoryImage || items.find((i) => i.image)?.image;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setSelectedCategory(category)}
+                  className="overflow-hidden rounded-xl border border-border bg-card p-0 text-left shadow-sm hover:shadow-md transition"
+                >
+                  <div className="h-28 w-full overflow-hidden bg-muted/20">
+                    {thumbnail ? (
+                      <img
+                        src={thumbnail}
+                        alt={`${category} thumbnail`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                        No image
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">{category}</span>
+                      <span className="text-xs text-muted-foreground">{items.length} items</span>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground truncate">Tap to browse</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory(null)}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                ← Back to categories
+              </button>
+              <span className="text-sm text-muted-foreground">{selectedCategory}</span>
             </div>
-            <div className="px-4">
-              {items.map((item, index) => (
-                <div key={item.id}>
+            <div className="flex gap-4 overflow-x-auto pb-4 pr-1 snap-x snap-mandatory">
+              {categories.get(selectedCategory)?.map((item) => (
+                <div key={item.id} className="shrink-0 w-[340px] snap-start rounded-xl border border-border bg-card p-4">
                   <MenuItemCard item={item} />
-                  {index < items.length - 1 && <hr className="border-border" />}
                 </div>
               ))}
             </div>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Cart FAB */}

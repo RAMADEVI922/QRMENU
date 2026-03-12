@@ -8,6 +8,7 @@ export interface MenuItem {
   category: string;
   available: boolean;
   dietary?: string[];
+  image?: string;
 }
 
 export interface CartItem extends MenuItem {
@@ -89,6 +90,11 @@ interface RestaurantStore {
   updateMenuItem: (id: string, item: Partial<MenuItem>) => void;
   deleteMenuItem: (id: string) => void;
 
+  // Category images (for customer menu section thumbnails)
+  categoryImages: Record<string, string>;
+  setCategoryImage: (category: string, image: string) => void;
+  clearCategoryImage: (category: string) => void;
+
   // Cart
   cart: CartItem[];
   addToCart: (item: MenuItem) => void;
@@ -126,9 +132,18 @@ interface RestaurantStore {
 
 export const useRestaurantStore = create<RestaurantStore>((set, get) => ({
   menuItems: sampleMenu,
+  categoryImages: {},
   addMenuItem: (item) => set((state) => ({
     menuItems: [...state.menuItems, { ...item, id: `M${Date.now()}` }],
   })),
+  setCategoryImage: (category, image) => set((state) => ({
+    categoryImages: { ...state.categoryImages, [category]: image },
+  })),
+  clearCategoryImage: (category) => set((state) => {
+    const next = { ...state.categoryImages };
+    delete next[category];
+    return { categoryImages: next };
+  }),
   updateMenuItem: (id, updates) => set((state) => ({
     menuItems: state.menuItems.map((item) => item.id === id ? { ...item, ...updates } : item),
   })),
