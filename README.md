@@ -1,73 +1,93 @@
-# Welcome to your Lovable project
+# QR Menu - Restaurant Digital Menu System
 
-## Project info
+A modern QR code-based digital menu system for restaurants built with React, TypeScript, and Tailwind CSS.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- QR code generation for menu access
+- Admin panel for menu management
+- Waiter panel for order tracking
+- Customer-friendly menu interface
+- Responsive design
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React 18, TypeScript, Vite
+- **UI Components**: shadcn-ui, Radix UI
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **Forms**: React Hook Form
+- **Testing**: Vitest, Playwright
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
+- Node.js 18+ and npm (or bun)
 
-**Use your preferred IDE**
+### Installation
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+# Clone the repository
+git clone https://github.com/RAMADEVI922/QRMENU.git
+cd QRMENU
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# Install dependencies
+npm install
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Available Scripts
 
-**Use GitHub Codespaces**
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run test` - Run tests
+- `npm run lint` - Check code quality
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Collaboration Guide
 
-## What technologies are used for this project?
+### For Team Members
 
-This project is built with:
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/RAMADEVI922/QRMENU.git
+   cd QRMENU
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
 
-## How can I deploy this project?
+3. **Make your changes and commit**
+   ```bash
+   git add .
+   git commit -m "feat: describe your changes"
+   ```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+4. **Push to your branch**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
 
-## Can I connect a custom domain to my Lovable project?
+5. **Create a Pull Request** on GitHub for review
 
-Yes, you can!
+### Branch Naming Convention
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `docs/` - Documentation updates
+- `refactor/` - Code refactoring
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Deployment
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+The project is automatically deployed to GitHub Pages on every push to the main branch via GitHub Actions.
+
+**Live URL**: https://ramadevi922.github.io/QRMENU/
+
+## License
+
+MIT
