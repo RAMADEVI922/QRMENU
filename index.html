@@ -37,5 +37,13 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script type="text/javascript">
+      // Register service worker for SPA routing on GitHub Pages
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/QRMENU/sw.js').catch((err) => {
+          console.log('Service Worker registration failed:', err);
+        });
+      }
+    </script>
   </body>
 </html>
