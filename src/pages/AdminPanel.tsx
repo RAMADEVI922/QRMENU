@@ -123,7 +123,12 @@ function MenuManagement() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', description: '', price: '', category: '', dietary: '', image: '' });
 
-  const categories = [...new Set(menuItems.map((i) => i.category))];
+  const normalizeCategory = (category: string) => {
+    if (category.toLowerCase().startsWith('mains')) return 'Mains';
+    return category;
+  };
+
+  const categories = [...new Set(menuItems.map((i) => normalizeCategory(i.category)))];
 
   const openAddForCategory = (category: string) => {
     setForm({ name: '', description: '', price: '', category, dietary: '', image: '' });

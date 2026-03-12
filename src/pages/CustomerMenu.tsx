@@ -180,19 +180,28 @@ export default function CustomerMenu() {
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Set current table on mount
-  useState(() => {
-    if (tableId) setCurrentTableId(tableId);
-  });
+  // Set current table when the route changes
+  useEffect(() => {
+    if (tableId) {
+      setCurrentTableId(tableId);
+    }
+  }, [tableId, setCurrentTableId]);
+
+  const normalizeCategory = (category: string) => {
+    // Keep Mains as one category, but show veg / non‑veg containers inside it.
+    if (category.toLowerCase().startsWith('mains')) return 'Mains';
+    return category;
+  };
 
   const categories = useMemo(() => {
     const cats = new Map<string, MenuItem[]>();
     menuItems
       .filter((item) => item.available)
       .forEach((item) => {
-        const list = cats.get(item.category) || [];
+        const category = normalizeCategory(item.category);
+        const list = cats.get(category) || [];
         list.push(item);
-        cats.set(item.category, list);
+        cats.set(category, list);
       });
     return cats;
   }, [menuItems]);
@@ -282,33 +291,44 @@ export default function CustomerMenu() {
             <div className="space-y-8 pb-4">
               {(() => {
                 const items = categories.get(selectedCategory) ?? [];
+                // If a category contains both veg and non-veg options, show them separately.
                 const vegItems = items.filter((item) => item.dietary?.includes('V'));
                 const nonVegItems = items.filter((item) => !item.dietary?.includes('V'));
 
+                const splitByDiet = vegItems.length > 0 && nonVegItems.length > 0;
+
                 return (
                   <>
-                    {vegItems.length > 0 && (
-                      <div>
-                        <h2 className="text-lg font-semibold mb-3">Veg</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {vegItems.map((item) => (
-                            <div key={item.id} className="rounded-xl border border-border bg-card p-4">
-                              <MenuItemCard item={item} />
-                            </div>
-                          ))}
+                    {splitByDiet ? (
+                      <>
+                        <div>
+                          <h2 className="text-lg font-semibold mb-3">Veg</h2>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {vegItems.map((item) => (
+                              <div key={item.id} className="rounded-xl border border-border bg-card p-4">
+                                <MenuItemCard item={item} />
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {nonVegItems.length > 0 && (
-                      <div>
-                        <h2 className="text-lg font-semibold mb-3">Non‑Veg</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {nonVegItems.map((item) => (
-                            <div key={item.id} className="rounded-xl border border-border bg-card p-4">
-                              <MenuItemCard item={item} />
-                            </div>
-                          ))}
+                        <div>
+                          <h2 className="text-lg font-semibold mb-3">Non‑Veg</h2>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {nonVegItems.map((item) => (
+                              <div key={item.id} className="rounded-xl border border-border bg-card p-4">
+                                <MenuItemCard item={item} />
+                              </div>
+                            ))}
+                          </div>
                         </div>
+                      </>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {items.map((item) => (
+                          <div key={item.id} className="rounded-xl border border-border bg-card p-4">
+                            <MenuItemCard item={item} />
+                          </div>
+                        ))}
                       </div>
                     )}
                   </>
