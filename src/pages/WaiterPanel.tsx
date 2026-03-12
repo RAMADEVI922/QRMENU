@@ -3,9 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Check, Clock, Bell, Receipt, UtensilsCrossed, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-
-const spring = { type: "spring" as const, duration: 0.4, bounce: 0 };
 
 export default function WaiterPanel() {
   const { orders, updateOrderStatus, notifications, markNotificationRead } = useRestaurantStore();
@@ -52,14 +49,10 @@ export default function WaiterPanel() {
         {unreadNotifications.length > 0 && (
           <div className="space-y-2">
             <h2 className="category-header mb-3">Notifications</h2>
-            <AnimatePresence>
+            <div>
               {unreadNotifications.map((n) => (
-                <motion.div
+                <div
                   key={n.id}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: 100 }}
-                  transition={spring}
                   className={`flex items-center justify-between p-3 rounded-xl border border-border ${
                     n.type === 'call_waiter' ? 'bg-warning/5' : n.type === 'request_bill' ? 'bg-primary/5' : 'bg-background'
                   }`}
@@ -73,9 +66,9 @@ export default function WaiterPanel() {
                   <Button variant="ghost" size="sm" onClick={() => markNotificationRead(n.id)}>
                     Dismiss
                   </Button>
-                </motion.div>
+                </div>
               ))}
-            </AnimatePresence>
+            </div>
           </div>
         )}
 

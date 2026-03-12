@@ -1,12 +1,9 @@
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus, ShoppingCart, Bell, Receipt, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRestaurantStore, type MenuItem } from '@/store/restaurantStore';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-
-const spring = { type: "spring" as const, duration: 0.4, bounce: 0 };
 
 function MenuItemCard({ item }: { item: MenuItem }) {
   const { addToCart, cart, updateCartQuantity } = useRestaurantStore();
@@ -29,12 +26,7 @@ function MenuItemCard({ item }: { item: MenuItem }) {
         <div className="flex flex-col items-end gap-2 shrink-0">
           <span className="dish-price">₹{item.price.toLocaleString('en-IN')}</span>
           {cartItem ? (
-            <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              transition={spring}
-              className="flex items-center gap-2 bg-primary/10 rounded-lg p-1"
-            >
+            <div className="flex items-center gap-2 bg-primary/10 rounded-lg p-1">
               <Button
                 variant="ghost"
                 size="icon"
@@ -52,9 +44,9 @@ function MenuItemCard({ item }: { item: MenuItem }) {
               >
                 <Plus className="h-4 w-4" />
               </Button>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div whileTap={{ scale: 0.97, opacity: 0.8 }} transition={spring}>
+            <div>
               <Button
                 variant="outline"
                 size="sm"
@@ -66,7 +58,7 @@ function MenuItemCard({ item }: { item: MenuItem }) {
               >
                 <Plus className="h-4 w-4 mr-1" /> Add
               </Button>
-            </motion.div>
+            </div>
           )}
         </div>
       </div>
@@ -94,21 +86,14 @@ function CartSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   };
 
   return (
-    <AnimatePresence>
+    <>
       {open && (
         <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-foreground/20 z-40"
             onClick={onClose}
           />
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={spring}
+          <div
             className="fixed bottom-0 left-0 right-0 bg-background z-50 rounded-t-2xl max-h-[80vh] flex flex-col shadow-2xl"
           >
             <div className="flex items-center justify-between p-4 border-b border-border">
@@ -154,10 +139,10 @@ function CartSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
                 </Button>
               </div>
             )}
-          </motion.div>
+          </div>
         </>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -308,10 +293,7 @@ export default function CustomerMenu() {
 
       {/* Cart FAB */}
       {cartCount > 0 && (
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={spring}
+        <div
           className="fixed bottom-6 right-6 z-30"
         >
           <Button variant="fab" size="fab" className="relative" onClick={() => setCartOpen(true)}>
@@ -320,22 +302,19 @@ export default function CustomerMenu() {
               {cartCount}
             </span>
           </Button>
-        </motion.div>
+        </div>
       )}
 
       {/* Bottom bar with total */}
       {cartCount > 0 && (
-        <motion.div
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          transition={spring}
+        <div
           className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-3 z-20 max-w-lg mx-auto"
         >
           <Button className="w-full" size="lg" onClick={() => setCartOpen(true)}>
             <ShoppingCart className="h-4 w-4 mr-2" />
             View Cart ({cartCount}) · ₹{cartTotal().toLocaleString('en-IN')}
           </Button>
-        </motion.div>
+        </div>
       )}
 
       <CartSheet open={cartOpen} onClose={() => setCartOpen(false)} />

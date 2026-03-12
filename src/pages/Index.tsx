@@ -1,9 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
 import { QrCode, Shield, UtensilsCrossed, ArrowRight } from 'lucide-react';
-
-const spring = { type: "spring" as const, duration: 0.4, bounce: 0 };
 
 export default function Index() {
   return (
@@ -29,25 +26,16 @@ export default function Index() {
       {/* Hero */}
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="max-w-2xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.1 }}
-          >
+          <div className="animate-fade-in">
             <h1 className="text-4xl sm:text-5xl font-bold leading-tight tracking-tight">
               Manage Your Menu.
             </h1>
             <p className="mt-4 text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
               A contactless digital menu system. Customers scan, browse, and order — all from their phone.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.25 }}
-            className="mt-8 flex flex-col sm:flex-row gap-3 justify-center"
-          >
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center animate-fade-in" style={{ animationDelay: '0.1s' }}>
             <Link to="/menu/T1">
               <Button size="lg" className="gap-2 w-full sm:w-auto">
                 <UtensilsCrossed className="h-4 w-4" />
@@ -61,15 +49,10 @@ export default function Index() {
                 Admin Panel
               </Button>
             </Link>
-          </motion.div>
+          </div>
 
           {/* Feature highlights */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.4 }}
-            className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left"
-          >
+          <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left animate-fade-in" style={{ animationDelay: '0.2s' }}>
             {[
               { title: 'Scan & Order', desc: 'Customers scan a QR code at their table to instantly access the menu and place orders.' },
               { title: 'Real-time Updates', desc: 'Waiters receive instant notifications. Menu changes reflect immediately.' },
@@ -80,7 +63,7 @@ export default function Index() {
                 <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{f.desc}</p>
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </main>
 
