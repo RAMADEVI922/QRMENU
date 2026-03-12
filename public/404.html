@@ -4,10 +4,15 @@
     <meta charset="utf-8">
     <title>QR Menu</title>
     <script type="text/javascript">
-      // Single Page Apps for GitHub Pages
+      // Redirect to index.html for SPA routing on GitHub Pages
       var pathSegmentsToKeep = 1;
       var l = window.location;
-      sessionStorage.redirect = l.pathname + l.search + l.hash;
+      var currentPath = l.pathname + l.search + l.hash;
+      
+      // Store the path for restoration
+      sessionStorage.redirect = currentPath;
+      
+      // Redirect to index.html
       l.replace(
         l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
         '/QRMENU/index.html'
