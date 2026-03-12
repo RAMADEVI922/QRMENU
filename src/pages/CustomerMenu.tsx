@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Minus, ShoppingCart, Bell, Receipt, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRestaurantStore, type MenuItem } from '@/store/restaurantStore';
