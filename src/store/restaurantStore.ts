@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { upsertMenuItem, deleteMenuItem as deleteMenuItemFromDb } from "@/lib/firebaseService";
+import { 
+  upsertMenuItem, 
+  deleteMenuItem as deleteMenuItemFromDb,
+  upsertOrder,
+  upsertNotification,
+  type FirebaseOrder,
+  type FirebaseNotification
+} from "@/lib/firebaseService";
 
 export interface MenuItem {
   id: string;
@@ -110,6 +117,7 @@ interface RestaurantStore {
 
   // Orders
   orders: Order[];
+  setOrders: (orders: Order[]) => void;
   placeOrder: (tableId: string) => void;
   addItemsToOrder: (tableId: string, items: CartItem[]) => void;
   updateOrderStatus: (id: string, status: Order['status']) => void;
@@ -127,6 +135,7 @@ interface RestaurantStore {
 
   // Notifications
   notifications: Notification[];
+  setNotifications: (notifications: Notification[]) => void;
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
@@ -212,6 +221,7 @@ export const useRestaurantStore = create<RestaurantStore>()(
   cartTotal: () => get().cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
 
   orders: [],
+  setOrders: (orders) => set({ orders }),
   addItemsToOrder: (tableId, items) => {
     set((state) => {
       const existing = state.orders.find((o) => o.tableId === tableId && o.status !== 'served');
@@ -238,6 +248,15 @@ export const useRestaurantStore = create<RestaurantStore>()(
         total: updatedItems.reduce((sum, i) => sum + i.price * i.quantity, 0),
         readyAt: nextReadyAt,
       };
+
+      // Sync to Firebase
+      const firebaseOrder: FirebaseOrder = {
+        ...updatedOrder,
+        createdAt: updatedOrder.createdAt.getTime(),
+      };
+      upsertOrder(firebaseOrder).catch(error => {
+        console.warn("Failed to sync updated order to Firebase:", error);
+      });
 
       return {
         orders: state.orders.map((o) => (o.id === existing.id ? updatedOrder : o)),
@@ -269,12 +288,36 @@ export const useRestaurantStore = create<RestaurantStore>()(
       readyAt,
     };
     set((state) => ({ orders: [order, ...state.orders] }));
+    
+    // Sync to Firebase
+    const firebaseOrder: FirebaseOrder = {
+      ...order,
+      createdAt: order.createdAt.getTime(),
+    };
+    upsertOrder(firebaseOrder).catch(error => {
+      console.warn("Failed to sync order to Firebase:", error);
+    });
+
     addNotification({ tableId, type: 'order', message: `New order from Table ${tableId}` });
     clearCart();
   },
-  updateOrderStatus: (id, status) => set((state) => ({
-    orders: state.orders.map((o) => o.id === id ? { ...o, status } : o),
-  })),
+  updateOrderStatus: (id, status) => {
+    set((state) => ({
+      orders: state.orders.map((o) => o.id === id ? { ...o, status } : o),
+    }));
+    
+    // Sync to Firebase
+    const order = get().orders.find((o) => o.id === id);
+    if (order) {
+      const firebaseOrder: FirebaseOrder = {
+        ...order,
+        createdAt: order.createdAt.getTime(),
+      };
+      upsertOrder(firebaseOrder).catch(error => {
+        console.warn("Failed to sync order status to Firebase:", error);
+      });
+    }
+  },
 
   tables: sampleTables,
   addTable: (number) => set((state) => ({
@@ -296,15 +339,46 @@ export const useRestaurantStore = create<RestaurantStore>()(
   })),
 
   notifications: [],
-  addNotification: (notification) => set((state) => ({
-    notifications: [
-      { ...notification, id: `N${Date.now()}`, createdAt: new Date(), read: false },
-      ...state.notifications,
-    ],
-  })),
-  markNotificationRead: (id) => set((state) => ({
-    notifications: state.notifications.map((n) => n.id === id ? { ...n, read: true } : n),
-  })),
+  setNotifications: (notifications) => set({ notifications }),
+  addNotification: (notification) => {
+    const newNotification = { 
+      ...notification, 
+      id: `N${Date.now()}`, 
+      createdAt: new Date(), 
+      read: false 
+    };
+    
+    set((state) => ({
+      notifications: [newNotification, ...state.notifications],
+    }));
+    
+    // Sync to Firebase
+    const firebaseNotification: FirebaseNotification = {
+      ...newNotification,
+      createdAt: newNotification.createdAt.getTime(),
+    };
+    upsertNotification(firebaseNotification).catch(error => {
+      console.warn("Failed to sync notification to Firebase:", error);
+    });
+  },
+  markNotificationRead: (id) => {
+    set((state) => ({
+      notifications: state.notifications.map((n) => n.id === id ? { ...n, read: true } : n),
+    }));
+    
+    // Sync to Firebase
+    const notification = get().notifications.find((n) => n.id === id);
+    if (notification) {
+      const firebaseNotification: FirebaseNotification = {
+        ...notification,
+        read: true,
+        createdAt: notification.createdAt.getTime(),
+      };
+      upsertNotification(firebaseNotification).catch(error => {
+        console.warn("Failed to sync notification read status to Firebase:", error);
+      });
+    }
+  },
   clearNotifications: () => set({ notifications: [] }),
 
   currentTableId: null,
