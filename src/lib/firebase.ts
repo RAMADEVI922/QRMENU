@@ -15,22 +15,33 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  throw new Error(
-    "Missing Firebase configuration. Ensure .env.local defines VITE_FIREBASE_API_KEY and VITE_FIREBASE_PROJECT_ID."
-  );
+// Check if Firebase is properly configured
+const isFirebaseConfigured = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+
+let app: any = null;
+let auth: any = null;
+let db: any = null;
+let storage: any = null;
+
+if (isFirebaseConfigured) {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+
+    // If your Firebase Storage rules require auth, sign in anonymously so uploads work.
+    signInAnonymously(auth).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.warn('Firebase anonymous auth failed:', err);
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn('Firebase initialization failed:', error);
+  }
+} else {
+  // eslint-disable-next-line no-console
+  console.warn('Firebase configuration not found. Some features may not work.');
 }
 
-const app = initializeApp(firebaseConfig);
-
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-
-// If your Firebase Storage rules require auth, sign in anonymously so uploads work.
-signInAnonymously(auth).catch((err) => {
-  // eslint-disable-next-line no-console
-  console.warn('Firebase anonymous auth failed:', err);
-});
-
-export { app };
+export { app, auth, db, storage, isFirebaseConfigured };

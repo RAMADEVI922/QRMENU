@@ -130,7 +130,7 @@ export default function TableManagement() {
 
   const getQRCodeURL = (tableNumber: number) => {
     const baseUrl = window.location.origin + '/QRMENU';
-    return `${baseUrl}/menu/T${tableNumber}`;
+    return `${baseUrl}/table-session?table=${tableNumber}`;
   };
 
   return (

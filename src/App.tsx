@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import CustomerMenu from "./pages/CustomerMenu.tsx";
+import SessionSelection from "./pages/SessionSelection.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
 import AdminLogin from "./pages/AdminLogin.tsx";
 import AdminSignUp from "./pages/AdminSignUp.tsx";
@@ -25,6 +26,7 @@ const App = () => {
         <Sonner />
         <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/table-session" element={<SessionSelection />} />
         <Route path="/menu/:tableId" element={<CustomerMenu />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin-signup" element={<AdminSignUp />} />

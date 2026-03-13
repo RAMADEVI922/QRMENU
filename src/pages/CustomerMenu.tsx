@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Plus, Minus, ShoppingCart, Bell, Receipt, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRestaurantStore, type MenuItem } from '@/store/restaurantStore';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 function MenuItemCard({ item }: { item: MenuItem }) {
@@ -176,6 +176,8 @@ function CartSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 export default function CustomerMenu() {
   const { tableId } = useParams<{ tableId: string }>();
+  const [searchParams] = useSearchParams();
+  const sessionType = searchParams.get('type') || 'active';
   const { menuItems, cart, cartTotal, setCurrentTableId, addNotification, categoryImages, placeOrder, orders } = useRestaurantStore();
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -225,7 +227,16 @@ export default function CustomerMenu() {
       {/* Header */}
       <div className="px-4 pt-6 pb-2">
         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Table {tableId}</p>
-        <h1 className="text-2xl font-bold mt-1">Menu</h1>
+        <div className="flex items-center justify-between mt-1">
+          <h1 className="text-2xl font-bold">Menu</h1>
+          <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+            sessionType === 'active' 
+              ? 'bg-blue-500/10 text-blue-600' 
+              : 'bg-orange-500/10 text-orange-600'
+          }`}>
+            {sessionType === 'active' ? '⚡ Active' : '🕐 Idle'}
+          </div>
+        </div>
       </div>
 
       {/* Quick actions */}
