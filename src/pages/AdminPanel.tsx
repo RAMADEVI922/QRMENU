@@ -3,17 +3,19 @@ import { useRestaurantStore } from '@/store/restaurantStore';
 import { useClerk } from '@clerk/react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, LayoutDashboard, UtensilsCrossed, Users, Receipt, LogOut } from 'lucide-react';
+import { Plus, Trash2, LayoutDashboard, UtensilsCrossed, Users, Receipt, LogOut, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
 import MenuManagement from '@/components/admin/MenuManagement';
+import TableManagement from '@/components/admin/TableManagement';
 
-type AdminTab = 'dashboard' | 'menu' | 'waiters' | 'bills';
+type AdminTab = 'dashboard' | 'menu' | 'tables' | 'waiters' | 'bills';
 
 const navItems: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
   { id: 'menu', label: 'Menu', icon: <UtensilsCrossed className="h-4 w-4" /> },
+  { id: 'tables', label: 'Tables', icon: <QrCode className="h-4 w-4" /> },
   { id: 'waiters', label: 'Waiters', icon: <Users className="h-4 w-4" /> },
   { id: 'bills', label: 'Bills', icon: <Receipt className="h-4 w-4" /> },
 ];
@@ -285,6 +287,7 @@ export default function AdminPanel() {
         <div className="p-8 md:p-10 max-w-7xl mx-auto">
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'menu' && <MenuManagement />}
+          {activeTab === 'tables' && <TableManagement />}
           {activeTab === 'waiters' && <WaiterManagement />}
           {activeTab === 'bills' && <BillManagement />}
         </div>
