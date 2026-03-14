@@ -6,7 +6,7 @@ import { ChevronDown, Clock, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'served';
-type FilterType = 'all' | 'pending' | 'confirmed' | 'preparing' | 'served';
+type FilterType = 'all' | 'pending' | 'served';
 
 function formatOrderTime(date: Date): string {
   return new Date(date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
