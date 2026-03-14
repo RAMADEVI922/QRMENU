@@ -1,0 +1,8 @@
+{
+  "specName": "waiter-order-notifications",
+  "specType": "feature",
+  "workflowType": "requirements-first",
+  "createdAt": "2026-03-13",
+  "status": "in-progress",
+  "description": "Enable real-time order notifications from customers to waiters"
+}
