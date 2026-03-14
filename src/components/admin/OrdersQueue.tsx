@@ -141,7 +141,8 @@ function OrderRow({
 }
 
 export default function OrdersQueue() {
-  const { orders, updateOrderStatus } = useRestaurantStore();
+  const orders = useRestaurantStore((state) => state.orders);
+  const updateOrderStatus = useRestaurantStore((state) => state.updateOrderStatus);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [displayedOrders, setDisplayedOrders] = useState<Order[]>([]);
 
@@ -170,24 +171,9 @@ export default function OrdersQueue() {
   };
 
   useEffect(() => {
-    console.log('📊 [OrdersQueue] useEffect triggered, setting up subscription');
-    
-    // Subscribe to store changes
-    const unsubscribe = useRestaurantStore.subscribe(
-      (state) => state.orders,
-      (updatedOrders) => {
-        console.log('📊 [OrdersQueue] Store subscription triggered with orders:', updatedOrders);
-        updateDisplayedOrders(updatedOrders);
-      }
-    );
-
+    console.log('📊 [OrdersQueue] useEffect triggered, updating displayed orders');
     updateDisplayedOrders(orders);
-    
-    return () => {
-      console.log('📊 [OrdersQueue] Unsubscribing from store');
-      unsubscribe();
-    };
-  }, [selectedFilter]);
+  }, [orders, selectedFilter]);
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     updateOrderStatus(orderId, newStatus);
@@ -220,6 +206,19 @@ export default function OrdersQueue() {
       <div className="mb-8">
         <h2 className="text-2xl font-extrabold tracking-tight">Orders Queue</h2>
         <p className="text-muted-foreground mt-1">Manage orders in FIFO order. Oldest orders appear first.</p>
+      </div>
+
+      {/* Debug Info */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-xs font-mono">
+        <p className="text-blue-900 mb-2">📊 Debug Info:</p>
+        <p className="text-blue-800">Total Orders in Store: <span className="font-bold">{orders.length}</span></p>
+        <p className="text-blue-800">Displayed Orders: <span className="font-bold">{displayedOrders.length}</span></p>
+        <p className="text-blue-800">Current Filter: <span className="font-bold">{selectedFilter}</span></p>
+        {orders.length > 0 && (
+          <p className="text-blue-800 mt-2">
+            Orders: {orders.map(o => `Table ${o.tableId} (${o.status})`).join(', ')}
+          </p>
+        )}
       </div>
 
       {/* Filter Buttons */}
