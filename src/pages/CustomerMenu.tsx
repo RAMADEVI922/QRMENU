@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { Plus, Minus, ShoppingCart, Bell, Receipt, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRestaurantStore, type MenuItem } from '@/store/restaurantStore';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { ConfirmOrderButton } from '@/components/ConfirmOrderButton';
 
 function MenuItemCard({ item }: { item: MenuItem }) {
   const { addToCart, cart, updateCartQuantity } = useRestaurantStore();
@@ -76,7 +77,8 @@ function MenuItemCard({ item }: { item: MenuItem }) {
 }
 
 function CartSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { cart, cartTotal, updateCartQuantity, removeFromCart, clearCart, placeOrder, currentTableId, addNotification, orders } = useRestaurantStore();
+  const { cart, cartTotal, updateCartQuantity, removeFromCart, clearCart, currentTableId, addNotification, orders } = useRestaurantStore();
+  const navigate = useNavigate();
 
   const currentOrder = orders.find((o) => o.tableId === currentTableId && o.status !== 'served');
 
@@ -88,20 +90,6 @@ function CartSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const formatTime = (ms: number) => {
     const mins = Math.ceil(ms / 60000);
     return `${mins} min${mins === 1 ? '' : 's'}`;
-  };
-
-  const handlePlaceOrder = () => {
-    if (!currentTableId) return;
-
-    placeOrder(currentTableId);
-
-    if (currentOrder) {
-      toast.success('Added more items! The waiter has been notified.');
-    } else {
-      toast.success('Order placed! The waiter will confirm shortly.');
-    }
-
-    onClose();
   };
 
   return (
@@ -156,14 +144,16 @@ function CartSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
                 {currentOrder ? (
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">Your order is being prepared. Estimated ready in {formatTime(getRemainingTime())}.</p>
-                    <Button className="w-full" size="lg" onClick={handlePlaceOrder}>
-                      Add extra items
-                    </Button>
+                    <ConfirmOrderButton
+                      onSuccess={() => onClose()}
+                      onError={() => {}}
+                    />
                   </div>
                 ) : (
-                  <Button className="w-full" size="lg" onClick={handlePlaceOrder}>
-                    Confirm Order
-                  </Button>
+                  <ConfirmOrderButton
+                    onSuccess={() => onClose()}
+                    onError={() => {}}
+                  />
                 )}
               </div>
             )}

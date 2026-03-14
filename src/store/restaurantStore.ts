@@ -25,6 +25,7 @@ export interface Order {
   total: number;
   createdAt: Date;
   readyAt: number; // timestamp when order is estimated to be ready
+  paymentMethod?: 'cash' | 'online';
 }
 
 export interface Table {
@@ -110,7 +111,11 @@ interface RestaurantStore {
   // Orders
   orders: Order[];
   placeOrder: (tableId: string) => void;
+  addItemsToOrder: (tableId: string, items: CartItem[]) => void;
   updateOrderStatus: (id: string, status: Order['status']) => void;
+  getOrderByTableId: (tableId: string) => Order | undefined;
+  getActiveOrderForTable: (tableId: string) => Order | undefined;
+  updateOrderPaymentMethod: (orderId: string, method: 'cash' | 'online') => void;
 
   // Tables
   tables: Table[];
@@ -280,6 +285,30 @@ export const useRestaurantStore = create<RestaurantStore>()(
   updateOrderStatus: (id, status) => set((state) => ({
     orders: state.orders.map((o) => o.id === id ? { ...o, status } : o),
   })),
+
+  getOrderByTableId: (tableId) => {
+    const state = get();
+    return state.orders.find(
+      (order) => order.tableId === tableId && order.status !== 'served'
+    );
+  },
+
+  getActiveOrderForTable: (tableId) => {
+    const state = get();
+    return state.orders.find(
+      (order) =>
+        order.tableId === tableId &&
+        ['pending', 'confirmed', 'preparing'].includes(order.status)
+    );
+  },
+
+  updateOrderPaymentMethod: (orderId, method) => {
+    set((state) => ({
+      orders: state.orders.map((o) =>
+        o.id === orderId ? { ...o, paymentMethod: method } : o
+      ),
+    }));
+  },
 
   tables: sampleTables,
   addTable: (number) => set((state) => ({

@@ -129,7 +129,10 @@ export default function TableManagement() {
   };
 
   const getQRCodeURL = (tableNumber: number) => {
-    const baseUrl = window.location.origin + '/QRMENU';
+    // For local development, use current origin
+    // For production (GitHub Pages), use /QRMENU base path
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    const baseUrl = isProduction ? window.location.origin + '/QRMENU' : window.location.origin;
     return `${baseUrl}/table-session?table=${tableNumber}`;
   };
 
