@@ -24,8 +24,10 @@ export function useFirebaseSync() {
     let unsubscribeBanners: (() => void) | undefined;
     let unsubscribeOrders: (() => void) | undefined;
     let unsubscribeNotifications: (() => void) | undefined;
+    let cancelled = false;
 
-    const init = async () => {
+    const runInit = async () => {
+      if (cancelled) return;
       try {
         // Load menu items - merge Firestore items with local sample items
         const items = await fetchMenuItems();
@@ -115,9 +117,20 @@ export function useFirebaseSync() {
       }
     };
 
-    init();
+    // Wait for Zustand persist to finish rehydrating from localStorage
+    // before running sync — otherwise menuItemImages will be empty {}
+    const hydrated = useRestaurantStore.persist.hasHydrated();
+    if (hydrated) {
+      runInit();
+    } else {
+      const unsub = useRestaurantStore.persist.onFinishHydration(() => {
+        runInit();
+        unsub();
+      });
+    }
 
     return () => {
+      cancelled = true;
       unsubscribeMenu?.();
       unsubscribeBanners?.();
       unsubscribeOrders?.();
