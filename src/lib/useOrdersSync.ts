@@ -1,13 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRestaurantStore } from '@/store/restaurantStore';
 import { watchOrders, saveOrder, updateOrderStatus, fetchOrders } from './firebaseService';
 
 export function useOrdersSync() {
   const orders = useRestaurantStore((state) => state.orders);
   const setOrders = useRestaurantStore((state) => state.setOrders);
-  const updateOrderStatus: any = useRestaurantStore((state) => state.updateOrderStatus);
+  const syncInProgressRef = useRef(false);
+  const lastSyncRef = useRef<string>('');
 
-  // Load initial orders from Firebase
+  // Load initial orders from Firebase (only once)
   useEffect(() => {
     console.log('🔄 useOrdersSync: Loading initial orders from Firebase');
     
@@ -29,13 +30,20 @@ export function useOrdersSync() {
     };
 
     loadOrders();
-  }, [setOrders]);
+  }, []); // Empty dependency array - run only once
 
   // Watch for real-time updates from Firebase
   useEffect(() => {
     console.log('👁️ useOrdersSync: Setting up real-time listener for orders');
     
     const unsubscribe = watchOrders((firebaseOrders) => {
+      // Prevent unnecessary updates by comparing with last sync
+      const ordersJson = JSON.stringify(firebaseOrders);
+      if (ordersJson === lastSyncRef.current) {
+        return; // No changes, skip update
+      }
+      lastSyncRef.current = ordersJson;
+      
       console.log('📊 useOrdersSync: Received', firebaseOrders.length, 'orders from Firebase');
       
       // Convert Firebase orders back to local format
@@ -53,19 +61,33 @@ export function useOrdersSync() {
     };
   }, [setOrders]);
 
-  // Sync local orders to Firebase when they change
+  // Sync local orders to Firebase when they change (debounced)
   useEffect(() => {
+    if (syncInProgressRef.current) {
+      return; // Skip if sync already in progress
+    }
+
+    syncInProgressRef.current = true;
     console.log('💾 useOrdersSync: Syncing', orders.length, 'orders to Firebase');
     
-    orders.forEach((order) => {
+    const syncPromises = orders.map((order) => {
+      // Handle both Date objects and ISO strings
+      const createdAtString = typeof order.createdAt === 'string' 
+        ? order.createdAt 
+        : order.createdAt.toISOString();
+      
       const firebaseOrder = {
         ...order,
-        createdAt: order.createdAt.toISOString(),
+        createdAt: createdAtString,
       };
       
-      saveOrder(firebaseOrder).catch((error) => {
+      return saveOrder(firebaseOrder).catch((error) => {
         console.warn('Failed to sync order to Firebase:', error);
       });
+    });
+
+    Promise.all(syncPromises).finally(() => {
+      syncInProgressRef.current = false;
     });
   }, [orders]);
 }

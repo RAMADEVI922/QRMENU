@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRestaurantStore, type Order } from '@/store/restaurantStore';
 import { updateOrderStatus as syncOrderStatus } from '@/lib/firebaseService';
 import { Button } from '@/components/ui/button';
@@ -97,6 +97,9 @@ function OrderRow({
   order: Order; 
   onStatusChange: (orderId: string, status: OrderStatus) => void;
 }) {
+  // Memoize waiting time to prevent recalculation on every render
+  const waitingTime = useMemo(() => calculateWaitingTime(order.createdAt), [order.createdAt]);
+  
   return (
     <tr className="border-b border-border/50 hover:bg-muted/5 transition-colors">
       <td className="px-6 py-4 font-bold text-primary">Table {order.tableId}</td>
@@ -118,7 +121,7 @@ function OrderRow({
         </div>
       </td>
       <td className="px-6 py-4 text-sm text-muted-foreground">
-        {calculateWaitingTime(order.createdAt)}
+        {waitingTime}
       </td>
       <td className="px-6 py-4">
         <StatusButton 
@@ -136,6 +139,16 @@ export default function OrdersQueue() {
   const updateOrderStatus = useRestaurantStore((state) => state.updateOrderStatus);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [displayedOrders, setDisplayedOrders] = useState<Order[]>([]);
+  const [, setUpdateTrigger] = useState(0); // Trigger re-render every minute
+
+  // Update waiting time every minute to prevent constant blinking
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setUpdateTrigger(prev => prev + 1);
+    }, 60000); // Update every 60 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Debug: Log when orders change
   useEffect(() => {
@@ -154,22 +167,25 @@ export default function OrdersQueue() {
     // Filter by status - be explicit about each case
     if (selectedFilter === 'pending') {
       filtered = filtered.filter((o) => o.status === 'pending');
-      console.log('📊 OrdersQueue: Filtered to pending orders:', filtered.length);
     } else if (selectedFilter === 'served') {
       filtered = filtered.filter((o) => o.status === 'served');
-      console.log('📊 OrdersQueue: Filtered to served orders:', filtered.length);
     } else {
       // Show all non-served orders for 'all' filter
       filtered = filtered.filter((o) => o.status !== 'served');
-      console.log('📊 OrdersQueue: Filtered to all non-served orders:', filtered.length);
     }
 
     // Sort by creation time (FIFO - oldest first)
     filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-    console.log('📊 OrdersQueue: Displaying', filtered.length, 'orders after filter:', selectedFilter);
-    setDisplayedOrders(filtered);
-  }, [orders, selectedFilter]);
+    // Only update if filtered orders actually changed
+    const filteredJson = JSON.stringify(filtered);
+    const displayedJson = JSON.stringify(displayedOrders);
+    
+    if (filteredJson !== displayedJson) {
+      console.log('📊 OrdersQueue: Displaying', filtered.length, 'orders after filter:', selectedFilter);
+      setDisplayedOrders(filtered);
+    }
+  }, [orders, selectedFilter, displayedOrders]);
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     updateOrderStatus(orderId, newStatus);
