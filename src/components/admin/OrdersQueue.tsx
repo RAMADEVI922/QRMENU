@@ -136,21 +136,37 @@ export default function OrdersQueue() {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [displayedOrders, setDisplayedOrders] = useState<Order[]>([]);
 
+  // Debug: Log when orders change
+  useEffect(() => {
+    console.log('📊 OrdersQueue: Orders updated', orders.length, 'orders');
+    orders.forEach((order) => {
+      console.log(`  - Table ${order.tableId}: ${order.items.length} items, Status: ${order.status}`);
+    });
+  }, [orders]);
+
   // Update displayed orders whenever orders or filter changes
   useEffect(() => {
+    console.log('📊 OrdersQueue: Filtering orders with filter:', selectedFilter);
+    
     let filtered = [...orders];
 
-    // Filter by status
-    if (selectedFilter !== 'all') {
-      filtered = filtered.filter((o) => o.status === selectedFilter);
+    // Filter by status - be explicit about each case
+    if (selectedFilter === 'pending') {
+      filtered = filtered.filter((o) => o.status === 'pending');
+      console.log('📊 OrdersQueue: Filtered to pending orders:', filtered.length);
+    } else if (selectedFilter === 'served') {
+      filtered = filtered.filter((o) => o.status === 'served');
+      console.log('📊 OrdersQueue: Filtered to served orders:', filtered.length);
     } else {
-      // Show all non-served orders
+      // Show all non-served orders for 'all' filter
       filtered = filtered.filter((o) => o.status !== 'served');
+      console.log('📊 OrdersQueue: Filtered to all non-served orders:', filtered.length);
     }
 
     // Sort by creation time (FIFO - oldest first)
     filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
+    console.log('📊 OrdersQueue: Displaying', filtered.length, 'orders after filter:', selectedFilter);
     setDisplayedOrders(filtered);
   }, [orders, selectedFilter]);
 

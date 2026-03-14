@@ -18,7 +18,7 @@ export function ConfirmOrderButton({
   onError,
   disabled = false,
 }: ConfirmOrderButtonProps) {
-  const { cart, currentTableId, placeOrder, orders } = useRestaurantStore();
+  const { cart, currentTableId, placeOrder } = useRestaurantStore();
   const navigate = useNavigate();
 
   const handleConfirmOrder = () => {
@@ -39,15 +39,22 @@ export function ConfirmOrderButton({
     }
 
     try {
+      console.log('🛒 ConfirmOrderButton: Placing order for table', currentTableId);
+      console.log('🛒 ConfirmOrderButton: Cart items:', cart.length);
+      
       // Place the order
       placeOrder(currentTableId);
 
-      // Get the order that was just created
-      const newOrder = orders.find(
+      // Get the updated state from store after placing order
+      const state = useRestaurantStore.getState();
+      console.log('🛒 ConfirmOrderButton: Total orders in store:', state.orders.length);
+      
+      const newOrder = state.orders.find(
         (o) => o.tableId === currentTableId && o.status !== 'served'
       );
 
       if (newOrder) {
+        console.log('🛒 ConfirmOrderButton: Order created successfully', newOrder.id);
         toast.success('Order confirmed! Redirecting...');
         onSuccess?.(newOrder.id);
 
@@ -55,8 +62,12 @@ export function ConfirmOrderButton({
         setTimeout(() => {
           navigate(`/order-summary/${currentTableId}`);
         }, 500);
+      } else {
+        console.error('🛒 ConfirmOrderButton: Order was not found in store after placement');
+        toast.error('Order was not created. Please try again.');
       }
     } catch (error) {
+      console.error('🛒 ConfirmOrderButton: Error placing order', error);
       const err = error instanceof Error ? error : new Error('Failed to confirm order');
       toast.error(err.message);
       onError?.(err);

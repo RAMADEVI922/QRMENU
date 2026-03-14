@@ -44,7 +44,7 @@ export interface Waiter {
 export interface Notification {
   id: string;
   tableId: string;
-  type: 'order' | 'call_waiter' | 'request_bill';
+  type: 'order' | 'call_waiter' | 'request_bill' | 'extra_order';
   message: string;
   read: boolean;
   createdAt: Date;
@@ -249,12 +249,17 @@ export const useRestaurantStore = create<RestaurantStore>()(
   placeOrder: (tableId) => {
     const { cart, cartTotal, clearCart, addNotification, addItemsToOrder } = get();
     
+    console.log('📦 Store: placeOrder called for table', tableId);
+    console.log('📦 Store: Cart has', cart.length, 'items');
+    
     if (cart.length === 0) {
+      console.warn('📦 Store: Cart is empty, cannot place order');
       return;
     }
 
     const existingOrder = get().orders.find((o) => o.tableId === tableId && o.status !== 'served');
     if (existingOrder) {
+      console.log('📦 Store: Existing order found, adding items');
       addItemsToOrder(tableId, cart);
       addNotification({ tableId, type: 'extra_order', message: `Table ${tableId} added more items` });
       clearCart();
@@ -274,13 +279,17 @@ export const useRestaurantStore = create<RestaurantStore>()(
       readyAt,
     };
     
+    console.log('📦 Store: Creating new order', order.id, 'with', order.items.length, 'items');
+    
     set((state) => {
       const newOrders = [order, ...state.orders];
+      console.log('📦 Store: Total orders after placement:', newOrders.length);
       return { orders: newOrders };
     });
     
     addNotification({ tableId, type: 'order', message: `New order from Table ${tableId}` });
     clearCart();
+    console.log('📦 Store: Order placed successfully');
   },
   updateOrderStatus: (id, status) => set((state) => ({
     orders: state.orders.map((o) => o.id === id ? { ...o, status } : o),
@@ -357,6 +366,27 @@ export const useRestaurantStore = create<RestaurantStore>()(
     categoryImages: state.categoryImages,
     orders: state.orders, // Persist orders so they appear across tabs/windows
   }),
+  // Custom serialization to handle Date objects
+  serialize: (state) => {
+    const serialized = JSON.stringify(state, (key, value) => {
+      // Convert Date objects to ISO strings
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      return value;
+    });
+    return serialized;
+  },
+  deserialize: (str) => {
+    const deserialized = JSON.parse(str, (key, value) => {
+      // Convert ISO strings back to Date objects for createdAt fields
+      if (key === 'createdAt' && typeof value === 'string') {
+        return new Date(value);
+      }
+      return value;
+    });
+    return deserialized;
+  },
   // If you want to clear cached state during development:
   // localStorage.removeItem('qr-menu-store');
 }
