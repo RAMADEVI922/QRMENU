@@ -8,7 +8,7 @@ import { uploadMenuItemImage, uploadCategoryImage, saveCategoryBanner, deleteCat
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MenuManagement() {
-  const { menuItems, addMenuItem, deleteMenuItem, updateMenuItem, categoryImages, setCategoryImage, clearCategoryImage } = useRestaurantStore();
+  const { menuItems, addMenuItem, deleteMenuItem, updateMenuItem, categoryImages, setCategoryImage, clearCategoryImage, setMenuItemImage, clearMenuItemImage } = useRestaurantStore();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', description: '', price: '', category: '', dietary: '', image: '' });
@@ -100,6 +100,10 @@ export default function MenuManagement() {
           dietary,
           image: imageUrl,
         });
+        // If image is base64, store it separately in the persistent images map
+        if (imageUrl?.startsWith('data:')) {
+          setMenuItemImage(editingId, imageUrl);
+        }
         toast.success('Item updated successfully');
       } else {
         await addMenuItem({
@@ -112,6 +116,10 @@ export default function MenuManagement() {
           dietary,
           image: imageUrl,
         });
+        // If image is base64, store it separately in the persistent images map
+        if (imageUrl?.startsWith('data:')) {
+          setMenuItemImage(itemId, imageUrl);
+        }
         toast.success('New menu item added');
       }
 
@@ -234,7 +242,7 @@ export default function MenuManagement() {
                   <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full shadow-lg hover:scale-110 transition-transform bg-white text-black" onClick={() => startEdit(item)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-lg hover:scale-110 transition-transform" onClick={() => { deleteMenuItem(item.id); toast.success('Deleted'); }}>
+                  <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full shadow-lg hover:scale-110 transition-transform" onClick={() => { deleteMenuItem(item.id); clearMenuItemImage(item.id); toast.success('Deleted'); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

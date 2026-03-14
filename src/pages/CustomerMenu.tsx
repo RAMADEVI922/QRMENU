@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { ConfirmOrderButton } from '@/components/ConfirmOrderButton';
 
 function MenuItemCard({ item }: { item: MenuItem }) {
-  const { addToCart, cart, updateCartQuantity } = useRestaurantStore();
+  const { addToCart, cart, updateCartQuantity, menuItemImages } = useRestaurantStore();
   const cartItem = cart.find((c) => c.id === item.id);
 
   return (
@@ -63,10 +63,10 @@ function MenuItemCard({ item }: { item: MenuItem }) {
           )}
         </div>
       </div>
-      {item.image && (
+      {(item.image || menuItemImages[item.id]) && (
         <div className="mt-3">
           <img 
-            src={item.image} 
+            src={item.image || menuItemImages[item.id]} 
             alt={item.name}
             className="w-full h-48 object-cover rounded-lg"
           />
@@ -168,7 +168,7 @@ export default function CustomerMenu() {
   const { tableId } = useParams<{ tableId: string }>();
   const [searchParams] = useSearchParams();
   const sessionType = searchParams.get('type') || 'active';
-  const { menuItems, cart, cartTotal, setCurrentTableId, addNotification, categoryImages, placeOrder, orders } = useRestaurantStore();
+  const { menuItems, cart, cartTotal, setCurrentTableId, addNotification, categoryImages, menuItemImages, placeOrder, orders } = useRestaurantStore();
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -245,7 +245,8 @@ export default function CustomerMenu() {
           <div className="grid grid-cols-2 gap-3">
             {Array.from(categories.entries()).map(([category, items]) => {
               const categoryImage = categoryImages[category];
-              const thumbnail = categoryImage || items.find((i) => i.image)?.image;
+              const thumbnailItem = items.find((i) => i.image || menuItemImages[i.id]);
+              const thumbnail = categoryImage || (thumbnailItem ? (thumbnailItem.image || menuItemImages[thumbnailItem.id]) : undefined);
               return (
                 <button
                   key={category}

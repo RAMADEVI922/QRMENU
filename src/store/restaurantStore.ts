@@ -60,7 +60,7 @@ export interface Notification {
 const sampleMenu: MenuItem[] = [
   { id: '1', name: 'Bruschetta', description: 'Grilled bread topped with fresh tomatoes, garlic, and basil', price: 320, category: 'Appetizers', available: true, dietary: ['V'] },
   { id: '2', name: 'Chicken Wings', description: 'Crispy fried wings tossed in spicy buffalo sauce', price: 450, category: 'Appetizers', available: true },
-  { id: '3', name: 'Soup of the Day', description: 'Chef\'s special seasonal soup served with bread', price: 280, category: 'Appetizers', available: true, dietary: ['V'] },
+  { id: '3', name: 'Stuffed Mushrooms', description: 'Button mushrooms stuffed with herbed cream cheese and breadcrumbs, baked golden', price: 320, category: 'Appetizers', available: true, dietary: ['V'] },
   { id: '4', name: 'Caesar Salad', description: 'Romaine lettuce, croutons, parmesan with classic dressing', price: 380, category: 'Appetizers', available: true, dietary: ['V'] },
   { id: '5', name: 'Grilled Salmon', description: 'Atlantic salmon fillet with lemon butter sauce and seasonal vegetables', price: 890, category: 'Mains', available: true },
   { id: '6', name: 'Chicken Biryani', description: 'Fragrant basmati rice layered with spiced chicken and saffron', price: 520, category: 'Mains', available: true },
@@ -105,6 +105,10 @@ interface RestaurantStore {
   setCategoryBanners: (banners: Record<string, string>) => void;
   clearCategoryImage: (category: string) => void;
 
+  menuItemImages: Record<string, string>;
+  setMenuItemImage: (itemId: string, image: string) => void;
+  clearMenuItemImage: (itemId: string) => void;
+
   cart: CartItem[];
   addToCart: (item: MenuItem) => void;
   removeFromCart: (id: string) => void;
@@ -145,6 +149,7 @@ export const useRestaurantStore = create<RestaurantStore>()(
     (set, get) => ({
       menuItems: sampleMenu,
       categoryImages: {},
+      menuItemImages: {},
       setMenuItems: (items) => set({ menuItems: items }),
       addMenuItem: async (item) => {
         set((state) => ({ menuItems: [...state.menuItems, item] }));
@@ -161,6 +166,14 @@ export const useRestaurantStore = create<RestaurantStore>()(
         const next = { ...state.categoryImages };
         delete next[category];
         return { categoryImages: next };
+      }),
+      setMenuItemImage: (itemId, image) => set((state) => ({
+        menuItemImages: { ...state.menuItemImages, [itemId]: image },
+      })),
+      clearMenuItemImage: (itemId) => set((state) => {
+        const next = { ...state.menuItemImages };
+        delete next[itemId];
+        return { menuItemImages: next };
       }),
       updateMenuItem: async (id, updates) => {
         set((state) => ({
@@ -307,14 +320,10 @@ export const useRestaurantStore = create<RestaurantStore>()(
         notifications: state.notifications,
         currentTableId: state.currentTableId,
         categoryImages: state.categoryImages,
+        menuItemImages: state.menuItemImages,
         orders: state.orders,
       }),
-      serialize: (state) => JSON.stringify(state, (_, value) =>
-        value instanceof Date ? value.toISOString() : value
-      ),
-      deserialize: (str) => JSON.parse(str, (key, value) =>
-        key === 'createdAt' && typeof value === 'string' ? new Date(value) : value
-      ),
     }
   )
 );
+

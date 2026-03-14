@@ -377,3 +377,24 @@ export function watchNotifications(onChanged: (notifications: FirebaseNotificati
     return () => {};
   }
 }
+
+// Alias used by useOrdersSync — accepts createdAt as ISO string or number
+export async function saveOrder(order: Omit<FirebaseOrder, 'createdAt'> & { createdAt: string | number }): Promise<void> {
+  const normalized: FirebaseOrder = {
+    ...order,
+    createdAt: typeof order.createdAt === 'string' ? new Date(order.createdAt).getTime() : order.createdAt,
+  };
+  return upsertOrder(normalized);
+}
+
+// Alias for backward compatibility with OrdersQueue component
+export async function updateOrderStatus(orderId: string, status: string): Promise<void> {
+  const ordersCollection = getOrdersCollection();
+  if (!isFirebaseConfigured || !ordersCollection) return;
+  try {
+    const docRef = doc(ordersCollection, orderId);
+    await setDoc(docRef, { status }, { merge: true });
+  } catch (error) {
+    console.warn('Failed to update order status:', error);
+  }
+}

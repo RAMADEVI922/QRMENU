@@ -32,18 +32,37 @@ export function useFirebaseSync() {
         if (items.length > 0) {
           const store = useRestaurantStore.getState();
           const localItems = store.menuItems;
+          const menuItemImages = store.menuItemImages;
+          const localById = new Map(localItems.map(i => [i.id, i]));
           const firestoreIds = new Set(items.map((i: { id: string }) => i.id));
           const localOnly = localItems.filter(i => !firestoreIds.has(i.id));
-          setMenuItems([...localOnly, ...items]);
+          const merged = items.map((i: { id: string; image?: string }) => {
+            const local = localById.get(i.id);
+            // Prefer persisted base64 image, then local in-memory, then Firestore
+            const persistedImage = menuItemImages[i.id];
+            if (!i.image && persistedImage) return { ...i, image: persistedImage };
+            if (!i.image && local?.image?.startsWith('data:')) return { ...i, image: local.image };
+            return i;
+          });
+          setMenuItems([...localOnly, ...merged]);
         }
         
         unsubscribeMenu = watchMenuItems((newItems) => {
-          // Merge: keep local items not in Firestore, add/update Firestore items
+          // Merge: keep local items not in Firestore, update Firestore items but preserve persisted base64 images
           const store = useRestaurantStore.getState();
           const localItems = store.menuItems;
+          const menuItemImages = store.menuItemImages;
+          const localById = new Map(localItems.map(i => [i.id, i]));
           const firestoreIds = new Set(newItems.map(i => i.id));
           const localOnly = localItems.filter(i => !firestoreIds.has(i.id));
-          setMenuItems([...localOnly, ...newItems]);
+          const merged = newItems.map(i => {
+            const local = localById.get(i.id);
+            const persistedImage = menuItemImages[i.id];
+            if (!i.image && persistedImage) return { ...i, image: persistedImage };
+            if (!i.image && local?.image?.startsWith('data:')) return { ...i, image: local.image };
+            return i;
+          });
+          setMenuItems([...localOnly, ...merged]);
         });
 
         // Load category banners
