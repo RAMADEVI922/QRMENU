@@ -145,7 +145,11 @@ export default function OrdersQueue() {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [displayedOrders, setDisplayedOrders] = useState<Order[]>([]);
 
+  console.log('📊 [OrdersQueue] Component rendered, current orders:', orders);
+
   const updateDisplayedOrders = (allOrders: Order[]) => {
+    console.log('📊 [OrdersQueue] updateDisplayedOrders called with:', allOrders);
+    
     let filtered = allOrders;
 
     // Filter by status
@@ -161,20 +165,28 @@ export default function OrdersQueue() {
     // Sort by creation time (FIFO - oldest first)
     filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
+    console.log('📊 [OrdersQueue] Filtered and sorted orders:', filtered);
     setDisplayedOrders(filtered);
   };
 
   useEffect(() => {
+    console.log('📊 [OrdersQueue] useEffect triggered, setting up subscription');
+    
     // Subscribe to store changes
     const unsubscribe = useRestaurantStore.subscribe(
       (state) => state.orders,
       (updatedOrders) => {
+        console.log('📊 [OrdersQueue] Store subscription triggered with orders:', updatedOrders);
         updateDisplayedOrders(updatedOrders);
       }
     );
 
     updateDisplayedOrders(orders);
-    return unsubscribe;
+    
+    return () => {
+      console.log('📊 [OrdersQueue] Unsubscribing from store');
+      unsubscribe();
+    };
   }, [selectedFilter]);
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {

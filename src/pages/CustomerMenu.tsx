@@ -93,7 +93,15 @@ function CartSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const handlePlaceOrder = () => {
     if (!currentTableId) return;
 
+    console.log('🛒 [CustomerMenu] Placing order for table:', currentTableId);
+    console.log('🛒 [CustomerMenu] Cart items:', cart);
+    console.log('🛒 [CustomerMenu] Cart total:', cartTotal());
+
     placeOrder(currentTableId);
+
+    // Get updated orders from store to verify
+    const updatedOrders = orders;
+    console.log('🛒 [CustomerMenu] Orders after placeOrder:', updatedOrders);
 
     if (currentOrder) {
       toast.success('Added more items! The waiter has been notified.');
