@@ -175,9 +175,36 @@ export default function CustomerMenu() {
   // Set current table when the route changes
   useEffect(() => {
     if (tableId) {
+      console.log('🏠 CustomerMenu: Received tableId from URL:', tableId);
+      console.log('🏠 CustomerMenu: Setting currentTableId to:', tableId);
       setCurrentTableId(tableId);
+      
+      // Verify it was set immediately
+      setTimeout(() => {
+        const state = useRestaurantStore.getState();
+        if (state.currentTableId === tableId) {
+          console.log('🏠 CustomerMenu: ✅ currentTableId successfully set to:', state.currentTableId);
+        } else {
+          console.log('🏠 CustomerMenu: ⚠️ WARNING - currentTableId mismatch!');
+          console.log('   Expected:', tableId);
+          console.log('   Actual:', state.currentTableId);
+          // Force update again if mismatch
+          setCurrentTableId(tableId);
+        }
+      }, 0);
     }
   }, [tableId, setCurrentTableId]);
+
+  // IMPORTANT: Clear cart when switching tables
+  useEffect(() => {
+    const state = useRestaurantStore.getState();
+    // If cart has items but we're on a different table, clear it
+    if (state.cart.length > 0) {
+      console.log('⚠️ CustomerMenu: Found cart items on table change - clearing cart');
+      const { clearCart } = useRestaurantStore.getState();
+      clearCart();
+    }
+  }, [tableId]);
 
   const normalizeCategory = (category: string) => {
     // Keep Mains as one category, but show veg / non‑veg containers inside it.

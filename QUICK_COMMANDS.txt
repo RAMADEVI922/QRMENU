@@ -1,0 +1,189 @@
+═══════════════════════════════════════════════════════════════
+  QUICK COMMAND REFERENCE - HTTPS Fix for Windows
+═══════════════════════════════════════════════════════════════
+
+📋 COPY & PASTE THESE COMMANDS IN ORDER:
+
+──────────────────────────────────────────────────────────────
+1. INSTALL MKCERT (Choose one method)
+──────────────────────────────────────────────────────────────
+
+Method A - Using Chocolatey (Recommended):
+  choco install mkcert -y
+
+Method B - Using winget:
+  winget install FiloSottile.mkcert
+
+──────────────────────────────────────────────────────────────
+2. INSTALL LOCAL CA (Run as Administrator)
+──────────────────────────────────────────────────────────────
+
+  mkcert -install
+
+──────────────────────────────────────────────────────────────
+3. CREATE CERTS DIRECTORY
+──────────────────────────────────────────────────────────────
+
+  mkdir certs
+
+──────────────────────────────────────────────────────────────
+4. GENERATE CERTIFICATES
+──────────────────────────────────────────────────────────────
+
+  mkcert -key-file certs/key.pem -cert-file certs/cert.pem 10.208.179.58 localhost 127.0.0.1
+
+──────────────────────────────────────────────────────────────
+5. VERIFY FILES CREATED
+──────────────────────────────────────────────────────────────
+
+  dir certs
+
+  You should see:
+    ✓ cert.pem
+    ✓ key.pem
+
+──────────────────────────────────────────────────────────────
+6. START DEV SERVER
+──────────────────────────────────────────────────────────────
+
+  npm run dev
+
+  Expected output:
+    ➜  Local:   https://localhost:5174/QRMENU/
+    ➜  Network: https://10.208.179.58:5174/QRMENU/
+
+──────────────────────────────────────────────────────────────
+7. OPEN IN BROWSER
+──────────────────────────────────────────────────────────────
+
+  https://10.208.179.58:5174/QRMENU/admin
+
+  - Click "Advanced" → "Proceed to 10.208.179.58"
+  - Check console (F12) - no more cookie errors!
+
+═══════════════════════════════════════════════════════════════
+  CONFIGURATION URLS
+═══════════════════════════════════════════════════════════════
+
+Firebase Console:
+  https://console.firebase.google.com/project/qr-menu-19cd1/authentication/settings
+  
+  Action: Add domain "10.208.179.58" to Authorized Domains
+
+Clerk Dashboard:
+  https://dashboard.clerk.com/
+  
+  Action: Add these to Allowed Origins:
+    - https://10.208.179.58:5174
+    - https://localhost:5174
+
+Chrome Flags:
+  chrome://flags/#allow-insecure-localhost
+  
+  Action: Set to "Enabled"
+
+═══════════════════════════════════════════════════════════════
+  AUTOMATED SETUP (Alternative)
+═══════════════════════════════════════════════════════════════
+
+Run this script (as Administrator):
+  
+  PowerShell:
+    .\setup-https.ps1
+  
+  OR Batch:
+    setup-https.bat
+
+═══════════════════════════════════════════════════════════════
+  VERIFICATION COMMANDS
+═══════════════════════════════════════════════════════════════
+
+Check mkcert installed:
+  mkcert -version
+
+Check certificates exist:
+  dir certs
+
+Check if server is running:
+  netstat -ano | findstr :5174
+
+Test HTTPS connection:
+  curl -k https://localhost:5174/QRMENU/
+
+═══════════════════════════════════════════════════════════════
+  TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════
+
+Issue: "mkcert: command not found"
+  Solution: Close and reopen PowerShell, or add to PATH:
+    $env:Path += ";C:\ProgramData\chocolatey\bin"
+
+Issue: "ENOENT: no such file or directory"
+  Solution: Regenerate certificates:
+    mkcert -key-file certs/key.pem -cert-file certs/cert.pem 10.208.179.58 localhost 127.0.0.1
+
+Issue: Still seeing HTTP in terminal
+  Solution: Restart dev server (Ctrl+C, then npm run dev)
+
+Issue: "Suffixed cookie failed" still appears
+  Solution:
+    1. Clear browser cache (Ctrl+Shift+Delete)
+    2. Hard refresh (Ctrl+Shift+R)
+    3. Verify URL shows https://
+    4. Check Clerk dashboard has correct origins
+
+═══════════════════════════════════════════════════════════════
+  FALLBACK: OpenSSL Method (if mkcert fails)
+═══════════════════════════════════════════════════════════════
+
+1. Install OpenSSL:
+   choco install openssl -y
+
+2. Create config file (certs/openssl.cnf):
+   [req]
+   default_bits = 4096
+   prompt = no
+   default_md = sha256
+   distinguished_name = dn
+   req_extensions = v3_req
+
+   [dn]
+   CN = 10.208.179.58
+
+   [v3_req]
+   subjectAltName = @alt_names
+
+   [alt_names]
+   IP.1 = 10.208.179.58
+   IP.2 = 127.0.0.1
+   DNS.1 = localhost
+
+3. Generate certificate:
+   openssl req -x509 -newkey rsa:4096 -keyout certs/key.pem -out certs/cert.pem -days 365 -nodes -config certs/openssl.cnf -extensions v3_req
+
+═══════════════════════════════════════════════════════════════
+  SUCCESS CHECKLIST
+═══════════════════════════════════════════════════════════════
+
+  [ ] mkcert installed
+  [ ] mkcert -install completed
+  [ ] Certificates in certs/ folder
+  [ ] vite.config.ts updated (already done)
+  [ ] package.json updated (already done)
+  [ ] Firebase: 10.208.179.58 in Authorized Domains
+  [ ] Clerk: https://10.208.179.58:5174 in Allowed Origins
+  [ ] Dev server shows https:// URLs
+  [ ] Browser shows https:// in address bar
+  [ ] No "Suffixed cookie failed" error
+  [ ] No Firebase 400 error
+  [ ] Clerk login works
+
+═══════════════════════════════════════════════════════════════
+  DOCUMENTATION
+═══════════════════════════════════════════════════════════════
+
+  📖 COMPLETE_HTTPS_FIX.md - Full step-by-step guide
+  📖 START_HERE_HTTPS_FIX.md - Quick start guide
+  📖 SETUP_CHECKLIST.md - Interactive checklist
+
+═══════════════════════════════════════════════════════════════

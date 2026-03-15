@@ -253,6 +253,9 @@ export const useRestaurantStore = create<RestaurantStore>()(
     
     console.log('📦 Store: placeOrder called for table', tableId);
     console.log('📦 Store: Cart has', cart.length, 'items');
+    cart.forEach((item) => {
+      console.log(`  📦 ${item.quantity}x ${item.name} (₹${item.price})`);
+    });
     
     if (cart.length === 0) {
       console.warn('📦 Store: Cart is empty, cannot place order');
@@ -282,10 +285,27 @@ export const useRestaurantStore = create<RestaurantStore>()(
     };
     
     console.log('📦 Store: Creating new order', order.id, 'with', order.items.length, 'items');
+    console.log('📦 Store: Order object:', {
+      id: order.id,
+      tableId: order.tableId,
+      itemCount: order.items.length,
+      status: order.status,
+      total: order.total,
+      createdAt: order.createdAt.toISOString(),
+    });
+    console.log('📦 Store: Items in order:', order.items.map(i => `${i.quantity}x ${i.name}`));
     
     set((state) => {
       const newOrders = [order, ...state.orders];
       console.log('📦 Store: Total orders after placement:', newOrders.length);
+      console.log('📦 Store: All current orders by table:');
+      const byTable: Record<string, number> = {};
+      newOrders.forEach(o => {
+        byTable[o.tableId] = (byTable[o.tableId] || 0) + 1;
+      });
+      Object.entries(byTable).forEach(([table, count]) => {
+        console.log(`  📦 Table ${table}: ${count} order(s)`);
+      });
       return { orders: newOrders };
     });
     

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background: #ffffff; color: #000000;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -19,6 +19,19 @@
     
     <!-- QR favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><rect width='10' height='10' fill='%23FFF' x='10' y='10'/><rect width='10' height='10' fill='%23FFF' x='30' y='10'/><rect width='10' height='10' fill='%23FFF' x='10' y='30'/><rect width='10' height='10' fill='%23FFF' x='60' y='10'/><rect width='10' height='10' fill='%23FFF' x='80' y='10'/><rect width='10' height='10' fill='%23FFF' x='60' y='30'/><rect width='10' height='10' fill='%23FFF' x='80' y='30'/></svg>" />
+    
+    <style>
+      html, body, #root {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #ffffff;
+        color: #000000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      }
+    </style>
+    
     <script type="text/javascript">
       // Handle redirects from 404.html for SPA routing
       (function() {
@@ -34,7 +47,7 @@
     </script>
   </head>
 
-  <body>
+  <body style="margin: 0; padding: 0; background-color: #ffffff; color: #000000;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script type="text/javascript">

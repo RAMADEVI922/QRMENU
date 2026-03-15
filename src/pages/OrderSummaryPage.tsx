@@ -24,12 +24,27 @@ export default function OrderSummaryPage() {
   // Set current table on mount
   useEffect(() => {
     if (tableId) {
+      console.log('📋 OrderSummaryPage: Setting current table to', tableId);
       setCurrentTableId(tableId);
     }
   }, [tableId, setCurrentTableId]);
 
   // Get order from store
   const order = tableId ? getOrderByTableId(tableId) : null;
+  
+  useEffect(() => {
+    console.log('📋 OrderSummaryPage: Looking for order for table', tableId);
+    if (order) {
+      console.log(`  ✅ Found order ${order.id} with ${order.items.length} items, status: ${order.status}`);
+    } else {
+      console.log(`  ❌ No active order found for table ${tableId}`);
+      const allOrders = useRestaurantStore.getState().orders;
+      console.log(`  📊 Total orders in store: ${allOrders.length}`);
+      allOrders.forEach((o) => {
+        console.log(`    - Order ${o.id}: Table ${o.tableId}, Status: ${o.status}`);
+      });
+    }
+  }, [tableId, order]);
 
   // Update waiting time every 10 seconds
   useEffect(() => {

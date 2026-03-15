@@ -23,30 +23,32 @@ const App = () => {
   useOrdersSync();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/table-session" element={<SessionSelection />} />
-        <Route path="/menu/:tableId" element={<CustomerMenu />} />
-        <Route path="/order-summary/:tableId" element={<OrderSummaryPage />} />
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/admin-signup" element={<AdminSignUp />} />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminPanel />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/waiter" element={<WaiterPanel />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
-  </QueryClientProvider>
+    <div className="h-screen w-screen bg-background text-foreground">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/table-session" element={<SessionSelection />} />
+            <Route path="/menu/:tableId" element={<CustomerMenu />} />
+            <Route path="/order-summary/:tableId" element={<OrderSummaryPage />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/admin-signup" element={<AdminSignUp />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminPanel />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/waiter" element={<WaiterPanel />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </div>
   );
 };
 

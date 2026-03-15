@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRestaurantStore, type Order } from '@/store/restaurantStore';
 import { updateOrderStatus as syncOrderStatus } from '@/lib/firebaseService';
+import { calculateWaitingTime, formatOrderTime } from '@/lib/orderUtils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, Clock, Users } from 'lucide-react';
@@ -8,21 +9,6 @@ import { toast } from 'sonner';
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'served';
 type FilterType = 'all' | 'pending' | 'served';
-
-function formatOrderTime(date: Date): string {
-  return new Date(date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-}
-
-function calculateWaitingTime(createdAt: Date): string {
-  const now = new Date();
-  const created = new Date(createdAt);
-  const diffMs = now.getTime() - created.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  
-  if (diffMins < 1) return 'Just now';
-  if (diffMins === 1) return '1 minute ago';
-  return `${diffMins} minutes ago`;
-}
 
 const statusColors: Record<OrderStatus, { bg: string; text: string; label: string }> = {
   pending: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Pending' },
@@ -150,12 +136,16 @@ export default function OrdersQueue() {
     return () => clearInterval(interval);
   }, []);
 
-  // Debug: Log when orders change
   useEffect(() => {
     console.log('📊 OrdersQueue: Orders updated', orders.length, 'orders');
+    console.log('📊 OrdersQueue: Orders by table:');
+    const byTable: Record<string, any[]> = {};
     orders.forEach((order) => {
+      if (!byTable[order.tableId]) byTable[order.tableId] = [];
+      byTable[order.tableId].push(order);
       console.log(`  - Table ${order.tableId}: ${order.items.length} items, Status: ${order.status}`);
     });
+    console.log('📊 OrdersQueue: Summary:', Object.keys(byTable).map(table => `${table}(${byTable[table].length})`).join(', '));
   }, [orders]);
 
   // Update displayed orders whenever orders or filter changes

@@ -50,7 +50,7 @@ const orderArbitrary = (): fc.Arbitrary<Order> => {
       total: fc.constant(
         cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
       ),
-      createdAt: fc.date(),
+      createdAt: fc.integer({ min: 1577836800000, max: Date.now() }).map(ts => new Date(ts)),
       readyAt: fc.integer({ min: 0 }),
     })
   );

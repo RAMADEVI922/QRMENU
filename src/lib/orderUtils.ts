@@ -144,11 +144,21 @@ export function validateStatusTransition(
  */
 export function formatOrderTime(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
+
+  // Normalize invalid dates (e.g. from malformed strings) to avoid showing "Invalid Date" in UI.
+  if (Number.isNaN(dateObj.getTime())) {
+    return 'Invalid time';
+  }
+
+  // Use the user's local time zone so displayed order time matches the device's clock.
+  // Ensure AM/PM is upper-case for consistency across browsers/locales.
+  return dateObj
+    .toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })
+    .replace(/\b(am|pm)\b/i, (m) => m.toUpperCase());
 }
 
 /**

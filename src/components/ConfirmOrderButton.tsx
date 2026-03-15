@@ -38,23 +38,46 @@ export function ConfirmOrderButton({
       return;
     }
 
+    // IMPORTANT: Log the exact table before order placement
+    const state = useRestaurantStore.getState();
+    console.log('🛒 ConfirmOrderButton: ========== ORDER PLACEMENT ==========');
+    console.log('🛒 ConfirmOrderButton: currentTableId from store:', state.currentTableId);
+    console.log('🛒 ConfirmOrderButton: currentTableId from hook:', currentTableId);
+    if (state.currentTableId !== currentTableId) {
+      console.warn('🛒 ConfirmOrderButton: ⚠️ TABLE ID MISMATCH!');
+    }
+    console.log('🛒 ConfirmOrderButton: Placing order for table', currentTableId);
+    console.log('🛒 ConfirmOrderButton: Cart items:', cart.map(item => `${item.quantity}x ${item.name}`));
+    
     try {
-      console.log('🛒 ConfirmOrderButton: Placing order for table', currentTableId);
-      console.log('🛒 ConfirmOrderButton: Cart items:', cart.length);
-      
       // Place the order
       placeOrder(currentTableId);
 
       // Get the updated state from store after placing order
-      const state = useRestaurantStore.getState();
-      console.log('🛒 ConfirmOrderButton: Total orders in store:', state.orders.length);
+      const updatedState = useRestaurantStore.getState();
+      console.log('🛒 ConfirmOrderButton: Total orders in store:', updatedState.orders.length);
+      console.log('🛒 ConfirmOrderButton: Orders by table:');
+      const byTable: Record<string, number> = {};
+      updatedState.orders.forEach(o => {
+        byTable[o.tableId] = (byTable[o.tableId] || 0) + 1;
+      });
+      Object.entries(byTable).forEach(([table, count]) => {
+        console.log(`  📦 Table ${table}: ${count}`);
+      });
       
-      const newOrder = state.orders.find(
+      const newOrder = updatedState.orders.find(
         (o) => o.tableId === currentTableId && o.status !== 'served'
       );
 
       if (newOrder) {
-        console.log('🛒 ConfirmOrderButton: Order created successfully', newOrder.id);
+        console.log('🛒 ConfirmOrderButton: ✅ Order created successfully', newOrder.id);
+        console.log('🛒 ConfirmOrderButton: Order details:', {
+          id: newOrder.id,
+          tableId: newOrder.tableId,
+          items: newOrder.items.length,
+          status: newOrder.status,
+        });
+        console.log('🛒 ConfirmOrderButton: ========== ORDER PLACEMENT COMPLETE ==========\n');
         toast.success('Order confirmed! Redirecting...');
         onSuccess?.(newOrder.id);
 
@@ -63,7 +86,7 @@ export function ConfirmOrderButton({
           navigate(`/order-summary/${currentTableId}`);
         }, 500);
       } else {
-        console.error('🛒 ConfirmOrderButton: Order was not found in store after placement');
+        console.error('🛒 ConfirmOrderButton: ❌ Order was not found in store after placement');
         toast.error('Order was not created. Please try again.');
       }
     } catch (error) {

@@ -4,7 +4,6 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // These values should come from `.env.local` and must not be committed to source control.
-// Make sure you create `.env.local` and add your Firebase config values there.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -30,19 +29,19 @@ if (isFirebaseConfigured) {
     db = getFirestore(app);
     storage = getStorage(app);
 
-    // If your Firebase Storage rules require auth, sign in anonymously so uploads work.
+    // Sign in anonymously for Firestore access
+    // This is safe because Firestore rules control actual access
     signInAnonymously(auth).catch((err: any) => {
-      // Silently fail - anonymous auth is optional for this app
-      // eslint-disable-next-line no-console
-      console.debug('Firebase anonymous auth info:', err?.code);
+      // Silently fail - anonymous auth is optional
+      console.debug('Firebase anonymous auth:', err?.code);
     });
+
+    console.log('✅ Firebase initialized successfully');
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.warn('Firebase initialization failed:', error);
+    console.warn('⚠️ Firebase initialization failed:', error);
   }
 } else {
-  // eslint-disable-next-line no-console
-  console.warn('Firebase configuration not found. Some features may not work.');
+  console.warn('⚠️ Firebase configuration not found. Check .env.local');
 }
 
 export { app, auth, db, storage, isFirebaseConfigured };
