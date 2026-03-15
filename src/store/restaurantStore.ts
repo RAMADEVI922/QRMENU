@@ -226,9 +226,12 @@ export const useRestaurantStore = create<RestaurantStore>()(
         set((state) => ({
           menuItems: state.menuItems.map((item) => item.id === id ? { ...item, ...updates } : item),
         }));
+        // Get the updated item directly from updates merged with current
         const current = get().menuItems.find((item) => item.id === id);
         if (current) {
-          upsertMenuItem({ ...current, ...updates }).catch((e) => console.warn("Failed to sync menu item update:", e));
+          const toSave = { ...current, ...updates };
+          console.log('[updateMenuItem] saving to Firestore:', toSave.id, 'image length:', toSave.image?.length ?? 0);
+          upsertMenuItem(toSave).catch((e) => console.warn("Failed to sync menu item update:", e));
         }
       },
       deleteMenuItem: async (id) => {

@@ -2,8 +2,9 @@ import { collection, doc, setDoc, deleteDoc, getDocs, onSnapshot, query, orderBy
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, isFirebaseConfigured } from "./firebase";
 
-// Compress and resize image — keeps it under Firestore's 1MB doc limit
-function compressImageToBase64(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
+// Compress and resize image aggressively to fit Firestore's 1MB doc limit
+// Tries progressively lower quality until under 700KB
+function compressImageToBase64(file: File, maxWidth = 400, quality = 0.4): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -15,7 +16,25 @@ function compressImageToBase64(file: File, maxWidth = 800, quality = 0.7): Promi
       canvas.height = img.height * scale;
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+
+      // Try progressively lower quality until under 700KB
+      const qualities = [0.4, 0.3, 0.2, 0.1];
+      for (const q of qualities) {
+        const result = canvas.toDataURL('image/jpeg', q);
+        const sizeKB = Math.round(result.length * 0.75 / 1024);
+        console.log(`[compress] quality=${q} size=${sizeKB}KB`);
+        if (sizeKB < 700) {
+          resolve(result);
+          return;
+        }
+      }
+      // Last resort: shrink canvas further
+      const smallCanvas = document.createElement('canvas');
+      smallCanvas.width = 200;
+      smallCanvas.height = Math.round(canvas.height * (200 / canvas.width));
+      const sCtx = smallCanvas.getContext('2d')!;
+      sCtx.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+      resolve(smallCanvas.toDataURL('image/jpeg', 0.3));
     };
     img.onerror = reject;
     img.src = url;
@@ -65,15 +84,25 @@ export async function upsertMenuItem(item: FirebaseMenuItem): Promise<void> {
     return;
   }
   try {
-    // Strip base64 images — too large for Firestore's 1MB limit
-    const itemToSave = { ...item };
-    if (itemToSave.image?.startsWith('data:')) {
-      delete itemToSave.image;
+    // Warn if image is large — Firestore has 1MB per document limit
+    if (item.image?.startsWith('data:')) {
+      const sizeKB = Math.round(item.image.length * 0.75 / 1024);
+      console.log(`[upsertMenuItem] ${item.id} image size: ~${sizeKB}KB`);
+      if (sizeKB > 900) {
+        console.warn(`[upsertMenuItem] Image too large (${sizeKB}KB), stripping to avoid Firestore error`);
+        const { image: _, ...rest } = item;
+        const docRef = doc(menuItemsCollection, item.id);
+        await setDoc(docRef, rest);
+        return;
+      }
     }
     const docRef = doc(menuItemsCollection, item.id);
-    await setDoc(docRef, itemToSave);
+    // Remove undefined fields — Firestore rejects them
+    const clean = Object.fromEntries(Object.entries(item).filter(([, v]) => v !== undefined));
+    await setDoc(docRef, clean);
+    console.log(`[upsertMenuItem] saved ${item.id} successfully`);
   } catch (error) {
-    console.warn('Failed to upsert menu item:', error);
+    console.error('Failed to upsert menu item:', error);
   }
 }
 
@@ -164,16 +193,21 @@ export function watchMenuItems(onChanged: (items: FirebaseMenuItem[]) => void) {
 
 // Category Banners
 export async function saveCategoryBanner(category: string, url: string): Promise<void> {
-  // Skip Firestore for base64 — exceeds 1MB limit; stored in Zustand localStorage instead
-  if (url.startsWith('data:')) {
-    return;
-  }
   const photosCollection = getPhotosCollection();
   if (!photosCollection) return;
-  const docRef = doc(photosCollection, "category_banners");
-  await setDoc(docRef, { [category]: url }, { merge: true });
+  try {
+    // Warn if base64 is large but still try to save — we compress aggressively
+    if (url.startsWith('data:')) {
+      const sizeKB = Math.round(url.length * 0.75 / 1024);
+      console.log(`[saveCategoryBanner] ${category} image size: ~${sizeKB}KB`);
+    }
+    const docRef = doc(photosCollection, "category_banners");
+    await setDoc(docRef, { [category]: url }, { merge: true });
+    console.log(`[saveCategoryBanner] saved ${category} successfully`);
+  } catch (error) {
+    console.error('Failed to save category banner:', error);
+  }
 }
-
 export async function fetchCategoryBanners(): Promise<Record<string, string>> {
   const photosCollection = getPhotosCollection();
   if (!photosCollection) return {};

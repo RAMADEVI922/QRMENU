@@ -2,26 +2,18 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Menu items - read by everyone, write by authenticated users
     match /menuItems/{itemId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     
-    // Photos and category banners - read by everyone, write by authenticated users
     match /photos/{photoId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     
-    // Orders - read and write by everyone (for customer and waiter access)
-    // In production, you should add proper authentication
     match /orders/{orderId} {
       allow read, write: if true;
     }
     
-    // Notifications - read and write by everyone (for customer and waiter access)
-    // In production, you should add proper authentication
     match /notifications/{notificationId} {
       allow read, write: if true;
     }
