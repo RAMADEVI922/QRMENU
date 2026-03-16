@@ -17,9 +17,16 @@ function MenuItemCard({ item }: { item: MenuItem }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="dish-name">{item.name}</span>
-            {item.dietary?.map((d) => (
-              <span key={d} className="text-[10px] font-bold border border-muted-foreground/30 text-muted-foreground rounded px-1 py-0.5 leading-none">
-                {d}
+            {item.dietary?.filter((d) => d === 'V' || d === 'NV').map((d) => (
+              <span
+                key={d}
+                className={`text-[10px] font-bold rounded px-1 py-0.5 leading-none ${
+                  d === 'V'
+                    ? 'bg-green-100 text-green-700 border border-green-300'
+                    : 'bg-red-100 text-red-700 border border-red-300'
+                }`}
+              >
+                {d === 'V' ? '🟢 Veg' : '🔴 Non-Veg'}
               </span>
             ))}
           </div>

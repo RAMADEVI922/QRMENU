@@ -33,6 +33,7 @@ export interface Order {
   createdAt: Date;
   readyAt: number;
   paymentMethod?: 'cash' | 'online';
+  assignedWaiterId?: string;
 }
 
 export interface Table {
@@ -75,7 +76,7 @@ const sampleMenu: MenuItem[] = [
   { id: 'A15', name: 'Corn & Cheese Balls', description: 'Golden fried balls stuffed with sweet corn and melted cheese', price: 260, category: 'Appetizers', available: true, dietary: ['V'] },
   { id: 'A16', name: 'Tandoori Mushrooms', description: 'Large mushrooms marinated in spiced yogurt and roasted in tandoor', price: 300, category: 'Appetizers', available: true, dietary: ['V'] },
   { id: 'A17', name: 'Chicken Satay', description: 'Grilled chicken skewers served with peanut dipping sauce', price: 400, category: 'Appetizers', available: true },
-  { id: 'A18', name: 'Vegetable Crudités', description: 'Fresh seasonal vegetables with hummus and ranch dipping sauces', price: 240, category: 'Appetizers', available: true, dietary: ['V', 'GF'] },
+  { id: 'A18', name: 'Vegetable Crudités', description: 'Fresh seasonal vegetables with hummus and ranch dipping sauces', price: 240, category: 'Appetizers', available: true, dietary: ['V'] },
   { id: 'A19', name: 'Chilli Paneer', description: 'Crispy paneer tossed in Indo-Chinese chilli sauce with peppers', price: 340, category: 'Appetizers', available: true, dietary: ['V'] },
   { id: 'A20', name: 'Prawn Tempura', description: 'Japanese-style battered prawns, light and crispy, with dipping sauce', price: 540, category: 'Appetizers', available: true },
   { id: 'A21', name: 'Aloo Tikki', description: 'Spiced potato patties pan-fried golden, served with mint chutney', price: 200, category: 'Appetizers', available: true, dietary: ['V'] },
@@ -100,14 +101,14 @@ const sampleMenu: MenuItem[] = [
   { id: 'M9', name: 'Kadai Paneer', description: 'Paneer and peppers tossed in freshly ground kadai masala', price: 440, category: 'Mains', available: true, dietary: ['V'] },
   { id: 'M10', name: 'Prawn Masala', description: 'Juicy prawns cooked in spiced onion-tomato masala with coastal flavours', price: 680, category: 'Mains', available: true },
   { id: 'M11', name: 'Chicken Korma', description: 'Tender chicken in mild, fragrant almond and saffron cream sauce', price: 540, category: 'Mains', available: true },
-  { id: 'M12', name: 'Aloo Gobi', description: 'Dry-spiced cauliflower and potato with cumin, turmeric and fresh coriander', price: 320, category: 'Mains', available: true, dietary: ['V', 'GF'] },
+  { id: 'M12', name: 'Aloo Gobi', description: 'Dry-spiced cauliflower and potato with cumin, turmeric and fresh coriander', price: 320, category: 'Mains', available: true, dietary: ['V'] },
   { id: 'M13', name: 'Fish Curry', description: 'Fresh fish in tangy Goan coconut and tamarind curry', price: 620, category: 'Mains', available: true },
-  { id: 'M14', name: 'Chana Masala', description: 'Hearty chickpeas in bold spiced tomato and onion gravy', price: 340, category: 'Mains', available: true, dietary: ['V', 'GF'] },
+  { id: 'M14', name: 'Chana Masala', description: 'Hearty chickpeas in bold spiced tomato and onion gravy', price: 340, category: 'Mains', available: true, dietary: ['V'] },
   { id: 'M15', name: 'Lamb Keema', description: 'Minced lamb cooked with peas, tomatoes and warming whole spices', price: 580, category: 'Mains', available: true },
   { id: 'M16', name: 'Malai Kofta', description: 'Soft paneer and potato dumplings in rich cashew cream gravy', price: 460, category: 'Mains', available: true, dietary: ['V'] },
   { id: 'M17', name: 'Chicken Saag', description: 'Tender chicken pieces slow-cooked in spiced mustard greens and spinach', price: 520, category: 'Mains', available: true },
   { id: 'M18', name: 'Hyderabadi Dum Biryani', description: 'Royal dum-cooked biryani with saffron, rose water and caramelised onions', price: 640, category: 'Mains', available: true },
-  { id: 'M19', name: 'Baingan Bharta', description: 'Smoky roasted aubergine mashed with onions, tomatoes and spices', price: 320, category: 'Mains', available: true, dietary: ['V', 'GF'] },
+  { id: 'M19', name: 'Baingan Bharta', description: 'Smoky roasted aubergine mashed with onions, tomatoes and spices', price: 320, category: 'Mains', available: true, dietary: ['V'] },
   { id: 'M20', name: 'Tandoori Chicken', description: 'Half chicken marinated in yogurt and spices, roasted in clay tandoor', price: 620, category: 'Mains', available: true },
   // International Mains
   { id: 'M21', name: 'Beef Lasagne', description: 'Layers of pasta, slow-cooked beef ragù and béchamel, baked golden', price: 720, category: 'Mains', available: true },
@@ -115,13 +116,13 @@ const sampleMenu: MenuItem[] = [
   { id: 'M23', name: 'Thai Green Curry', description: 'Fragrant coconut milk curry with vegetables and jasmine rice', price: 520, category: 'Mains', available: true, dietary: ['V'] },
   { id: 'M24', name: 'BBQ Pork Ribs', description: 'Slow-smoked pork ribs glazed in smoky BBQ sauce, served with coleslaw', price: 980, category: 'Mains', available: true },
   { id: 'M25', name: 'Mushroom Risotto', description: 'Creamy Arborio rice with wild mushrooms, white wine and parmesan', price: 540, category: 'Mains', available: true, dietary: ['V'] },
-  { id: '11', name: 'French Fries', description: 'Crispy golden fries with seasoning', price: 220, category: 'Sides', available: true, dietary: ['V', 'GF'] },
+  { id: '11', name: 'French Fries', description: 'Crispy golden fries with seasoning', price: 220, category: 'Sides', available: true, dietary: ['V'] },
   { id: '12', name: 'Garlic Naan', description: 'Soft naan bread with garlic and butter', price: 120, category: 'Sides', available: true, dietary: ['V'] },
-  { id: '13', name: 'Steamed Rice', description: 'Plain basmati rice', price: 150, category: 'Sides', available: true, dietary: ['V', 'GF'] },
+  { id: '13', name: 'Steamed Rice', description: 'Plain basmati rice', price: 150, category: 'Sides', available: true, dietary: ['V'] },
   { id: '14', name: 'Chocolate Lava Cake', description: 'Warm chocolate cake with molten center, served with ice cream', price: 420, category: 'Desserts', available: true, dietary: ['V'] },
   { id: '15', name: 'Gulab Jamun', description: 'Soft milk dumplings soaked in rose-flavored sugar syrup', price: 280, category: 'Desserts', available: true, dietary: ['V'] },
   { id: '16', name: 'Mango Lassi', description: 'Chilled yogurt drink blended with fresh mango', price: 180, category: 'Beverages', available: true, dietary: ['V'] },
-  { id: '17', name: 'Fresh Lime Soda', description: 'Refreshing lime with soda water, sweet or salted', price: 120, category: 'Beverages', available: true, dietary: ['V', 'GF'] },
+  { id: '17', name: 'Fresh Lime Soda', description: 'Refreshing lime with soda water, sweet or salted', price: 120, category: 'Beverages', available: true, dietary: ['V'] },
   { id: '18', name: 'Cold Coffee', description: 'Iced coffee blended with milk and cream', price: 220, category: 'Beverages', available: true, dietary: ['V'] },
 ];
 
@@ -168,6 +169,8 @@ interface RestaurantStore {
   placeOrder: (tableId: string) => void;
   addItemsToOrder: (tableId: string, items: CartItem[]) => void;
   updateOrderStatus: (id: string, status: Order['status']) => void;
+  assignOrderToWaiter: (orderId: string, waiterId: string) => void;
+  autoAssignWaiter: (orderId: string) => string | null; // returns assigned waiter name or null
   getOrderByTableId: (tableId: string) => Order | undefined;
   getActiveOrderForTable: (tableId: string) => Order | undefined;
   updateOrderPaymentMethod: (orderId: string, method: 'cash' | 'online') => void;
@@ -315,6 +318,37 @@ export const useRestaurantStore = create<RestaurantStore>()(
           upsertOrder({ ...order, createdAt: order.createdAt.getTime() } as FirebaseOrder)
             .catch((e) => console.warn("Failed to sync order status:", e));
         }
+      },
+      assignOrderToWaiter: (orderId, waiterId) => {
+        set((state) => ({
+          orders: state.orders.map((o) => o.id === orderId ? { ...o, assignedWaiterId: waiterId } : o),
+        }));
+        const order = get().orders.find((o) => o.id === orderId);
+        if (order) {
+          upsertOrder({ ...order, createdAt: order.createdAt.getTime() } as FirebaseOrder)
+            .catch((e) => console.warn("Failed to sync waiter assignment:", e));
+        }
+      },
+      autoAssignWaiter: (orderId) => {
+        const { waiters, orders } = get();
+        const activeWaiters = waiters.filter((w) => w.active);
+        if (activeWaiters.length === 0) return null;
+        // Find waiter with fewest active (non-served) orders
+        const workload = activeWaiters.map((w) => ({
+          waiter: w,
+          count: orders.filter((o) => o.assignedWaiterId === w.id && o.status !== 'served').length,
+        }));
+        workload.sort((a, b) => a.count - b.count);
+        const assigned = workload[0].waiter;
+        set((state) => ({
+          orders: state.orders.map((o) => o.id === orderId ? { ...o, assignedWaiterId: assigned.id } : o),
+        }));
+        const order = get().orders.find((o) => o.id === orderId);
+        if (order) {
+          upsertOrder({ ...order, createdAt: order.createdAt.getTime() } as FirebaseOrder)
+            .catch((e) => console.warn("Failed to sync auto-assignment:", e));
+        }
+        return assigned.name;
       },
       getOrderByTableId: (tableId) =>
         get().orders.find((o) => o.tableId === tableId && o.status !== 'served'),

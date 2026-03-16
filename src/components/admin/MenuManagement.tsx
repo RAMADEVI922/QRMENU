@@ -270,9 +270,11 @@ export default function MenuManagement() {
                   
                   {item.dietary && item.dietary.length > 0 && (
                     <div className="flex gap-1">
-                      {item.dietary.map(d => (
-                        <span key={d} className="px-2 py-0.5 bg-secondary text-secondary-foreground text-[10px] font-bold rounded-md tracking-wider">
-                          {d}
+                      {item.dietary.filter((d) => d === 'V' || d === 'NV').map(d => (
+                        <span key={d} className={`px-2 py-0.5 text-[10px] font-bold rounded-md tracking-wider ${
+                          d === 'V' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {d === 'V' ? '🟢 Veg' : '🔴 Non-Veg'}
                         </span>
                       ))}
                     </div>
@@ -420,14 +422,30 @@ export default function MenuManagement() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold flex items-center gap-2">Dietary Badges</label>
-                      <input 
-                        className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
-                        placeholder="e.g. V, GF, Vegan" 
-                        value={form.dietary} 
-                        onChange={(e) => setForm({ ...form, dietary: e.target.value })} 
-                        disabled={isSaving}
-                      />
+                      <label className="text-sm font-semibold flex items-center gap-2">Dietary</label>
+                      <div className="flex gap-2">
+                        {['Veg', 'Non-Veg'].map((opt) => {
+                          const val = opt === 'Veg' ? 'V' : 'NV';
+                          const selected = form.dietary === val;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setForm({ ...form, dietary: selected ? '' : val })}
+                              disabled={isSaving}
+                              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border text-sm font-semibold transition-all ${
+                                selected
+                                  ? opt === 'Veg'
+                                    ? 'bg-green-100 border-green-400 text-green-700'
+                                    : 'bg-red-100 border-red-400 text-red-700'
+                                  : 'border-border text-muted-foreground hover:bg-muted'
+                              }`}
+                            >
+                              {opt === 'Veg' ? '🟢' : '🔴'} {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 

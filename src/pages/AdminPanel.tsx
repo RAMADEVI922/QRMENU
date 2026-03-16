@@ -238,17 +238,235 @@ function BillManagement() {
   const { orders } = useRestaurantStore();
   const servedOrders = orders.filter((o) => o.status === 'served' || o.status === 'confirmed');
 
+  const handlePrintReceipt = (order: ReturnType<typeof useRestaurantStore.getState>['orders'][0]) => {
+    const itemsRows = order.items.map((i) => `
+      <tr>
+        <td class="item-name">${i.name}</td>
+        <td class="item-qty">${i.quantity}</td>
+        <td class="item-price">&#8377;${(i.price * i.quantity).toLocaleString('en-IN')}</td>
+      </tr>`).join('');
+
+    const orderTime = new Date(order.createdAt).toLocaleString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Receipt - ${order.id}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+    .receipt {
+      background: #fff;
+      width: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+    }
+    .header {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: white;
+      padding: 28px 28px 20px;
+      text-align: center;
+    }
+    .restaurant-name {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    .restaurant-tagline {
+      font-size: 12px;
+      opacity: 0.85;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .receipt-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 12px;
+      letter-spacing: 0.5px;
+    }
+    .meta {
+      padding: 20px 28px;
+      background: #fafafa;
+      border-bottom: 1px solid #f0f0f0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .meta-item label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #999;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .meta-item span {
+      font-size: 13px;
+      font-weight: 600;
+      color: #222;
+    }
+    .items-section { padding: 20px 28px; }
+    .items-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #999;
+      margin-bottom: 12px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    .col-header {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #bbb;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .col-header:last-child { text-align: right; }
+    .col-header:nth-child(2) { text-align: center; }
+    .item-name { padding: 10px 0 10px; font-size: 13px; color: #333; font-weight: 500; }
+    .item-qty { text-align: center; font-size: 13px; color: #888; padding: 10px 8px; }
+    .item-price { text-align: right; font-size: 13px; font-weight: 600; color: #222; padding: 10px 0; }
+    tr { border-bottom: 1px solid #f8f8f8; }
+    tr:last-child { border-bottom: none; }
+    .total-section {
+      margin: 0 28px 20px;
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+    .total-label { font-size: 13px; font-weight: 600; opacity: 0.9; }
+    .total-amount { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
+    .payment-chip {
+      display: inline-block;
+      background: rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .footer {
+      padding: 16px 28px 24px;
+      text-align: center;
+      border-top: 1px dashed #eee;
+    }
+    .footer p { font-size: 12px; color: #aaa; line-height: 1.6; }
+    .footer .thank-you { font-size: 14px; font-weight: 700; color: #f97316; margin-bottom: 4px; }
+    .divider { border: none; border-top: 1px dashed #eee; margin: 0; }
+    @media print {
+      body { background: white; padding: 0; }
+      .receipt { box-shadow: none; border-radius: 0; width: 100%; }
+      @page { margin: 0; size: A5; }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="header">
+      <div class="restaurant-name">🍽️ QR Restaurant</div>
+      <div class="restaurant-tagline">Fine Dining Experience</div>
+      <div class="receipt-badge">OFFICIAL RECEIPT</div>
+    </div>
+
+    <div class="meta">
+      <div class="meta-item">
+        <label>Table</label>
+        <span>${order.tableId}</span>
+      </div>
+      <div class="meta-item">
+        <label>Date &amp; Time</label>
+        <span>${orderTime}</span>
+      </div>
+      <div class="meta-item">
+        <label>Order ID</label>
+        <span style="font-size:11px">${order.id}</span>
+      </div>
+      <div class="meta-item">
+        <label>Status</label>
+        <span style="color:#16a34a">${order.status.toUpperCase()}</span>
+      </div>
+    </div>
+
+    <div class="items-section">
+      <div class="items-title">Order Items</div>
+      <table>
+        <thead>
+          <tr>
+            <th class="col-header" style="text-align:left">Item</th>
+            <th class="col-header">Qty</th>
+            <th class="col-header">Amount</th>
+          </tr>
+        </thead>
+        <tbody>${itemsRows}</tbody>
+      </table>
+    </div>
+
+    <div class="total-section">
+      <div>
+        <div class="total-label">Total Amount</div>
+        <div class="payment-chip">${order.paymentMethod === 'online' ? '💳 Online Payment' : '💵 Cash on Delivery'}</div>
+      </div>
+      <div class="total-amount">&#8377;${order.total.toLocaleString('en-IN')}</div>
+    </div>
+
+    <div class="footer">
+      <p class="thank-you">Thank you for dining with us!</p>
+      <p>We hope you enjoyed your meal.<br/>Visit us again soon.</p>
+      <p style="margin-top:8px;font-size:11px">qr-menu-19cd1.web.app</p>
+    </div>
+  </div>
+  <script>window.onload = () => window.print();</script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-${order.tableId}-${order.id}.html`;
+      a.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+  };
+
   return (
     <div>
       <div className="mb-8">
         <h2 className="text-2xl font-extrabold tracking-tight">Financial Records</h2>
         <p className="text-muted-foreground mt-1">Review completed orders and generated bills.</p>
       </div>
-      
+
       {servedOrders.length === 0 ? (
         <div className="bg-card border border-border/50 rounded-2xl p-10 text-center shadow-sm">
-           <Receipt className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-           <p className="text-muted-foreground font-medium">No completed bills to display yet.</p>
+          <Receipt className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-muted-foreground font-medium">No completed bills to display yet.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -273,8 +491,15 @@ function BillManagement() {
                 ))}
               </div>
               <div className="mt-4 pt-4 border-t border-border/50 flex justify-between items-center">
-                 <span className="text-xs font-semibold px-2 py-1 rounded bg-muted text-muted-foreground uppercase">{order.status}</span>
-                 <Button variant="outline" size="sm" className="rounded-full text-xs h-7">Print Receipt</Button>
+                <span className="text-xs font-semibold px-2 py-1 rounded bg-muted text-muted-foreground uppercase">{order.status}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full text-xs h-7 gap-1.5"
+                  onClick={() => handlePrintReceipt(order)}
+                >
+                  <Receipt className="h-3 w-3" /> Print Receipt
+                </Button>
               </div>
             </div>
           ))}

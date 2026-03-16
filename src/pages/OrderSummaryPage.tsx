@@ -7,7 +7,7 @@ import { OrderStatusBadge } from '@/components/OrderStatusBadge';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
 import { calculateWaitingTime, formatOrderTime } from '@/lib/orderUtils';
 import { sendBillEmail, isEmailConfigured } from '@/lib/emailService';
-import { ArrowLeft, Plus, Mail, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Mail, Loader2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function OrderSummaryPage() {
@@ -105,6 +105,79 @@ export default function OrderSummaryPage() {
     navigate(`/menu/${tableId}`, { replace: true });
   };
 
+  const handlePrintReceipt = () => {
+    const itemsRows = order.items
+      .map((i) => `
+        <tr>
+          <td style="padding:4px 0">${i.name}</td>
+          <td style="padding:4px 8px;text-align:center">${i.quantity}</td>
+          <td style="padding:4px 0;text-align:right">&#8377;${(i.price * i.quantity).toLocaleString('en-IN')}</td>
+        </tr>`)
+      .join('');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Receipt - Table ${tableId}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Courier New', monospace; font-size: 13px; width: 300px; margin: 0 auto; padding: 16px; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .divider { border-top: 1px dashed #000; margin: 8px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-weight: bold; padding: 4px 0; border-bottom: 1px solid #000; }
+    th:last-child, td:last-child { text-align: right; }
+    th:nth-child(2), td:nth-child(2) { text-align: center; }
+    .total-row td { font-weight: bold; font-size: 14px; padding-top: 8px; border-top: 1px solid #000; }
+    .footer { margin-top: 16px; text-align: center; font-size: 11px; color: #555; }
+    @media print { @page { margin: 0; size: 80mm auto; } }
+  </style>
+</head>
+<body>
+  <div class="center bold" style="font-size:16px;margin-bottom:4px">QR Restaurant</div>
+  <div class="center" style="font-size:11px;color:#555;margin-bottom:12px">Thank you for dining with us!</div>
+  <div class="divider"></div>
+  <div style="margin:8px 0;font-size:12px">
+    <div>Table: <strong>${tableId}</strong></div>
+    <div>Order: <strong>${order.id}</strong></div>
+    <div>Time: <strong>${formatOrderTime(order.createdAt)}</strong></div>
+    <div>Payment: <strong>${order.paymentMethod === 'online' ? 'Online Payment' : 'Cash on Delivery'}</strong></div>
+  </div>
+  <div class="divider"></div>
+  <table>
+    <thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead>
+    <tbody>${itemsRows}</tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="2">TOTAL</td>
+        <td>&#8377;${order.total.toLocaleString('en-IN')}</td>
+      </tr>
+    </tfoot>
+  </table>
+  <div class="divider"></div>
+  <div class="footer">
+    <div>Scan QR to reorder anytime</div>
+    <div style="margin-top:4px">qr-menu-19cd1.web.app</div>
+  </div>
+  <script>window.onload = () => { window.print(); }</script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) {
+      // Fallback: direct download as HTML file
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-table-${tableId}-${order.id}.html`;
+      a.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -199,6 +272,12 @@ export default function OrderSummaryPage() {
             <Plus className="h-4 w-4 mr-2" />
             Add More Items
           </Button>
+          {order.paymentMethod && (
+            <Button onClick={handlePrintReceipt} variant="outline" className="w-full" size="lg">
+              <Printer className="h-4 w-4 mr-2" />
+              Print / Download Receipt
+            </Button>
+          )}
           <Button onClick={handleCompleteOrder} disabled={!order.paymentMethod} className="w-full" size="lg">
             Complete Order
           </Button>

@@ -311,6 +311,7 @@ export interface FirebaseOrder {
   createdAt: number;
   readyAt: number;
   paymentMethod?: 'cash' | 'online';
+  assignedWaiterId?: string;
 }
 
 export interface FirebaseNotification {
