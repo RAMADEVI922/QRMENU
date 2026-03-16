@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useRestaurantStore } from '@/store/restaurantStore';
-import { useClerk } from '@clerk/react';
+import { clearAdminSession } from '@/lib/adminAuth';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2, LayoutDashboard, UtensilsCrossed, Users, Receipt, LogOut, QrCode, ListOrdered } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import MenuManagement from '@/components/admin/MenuManagement';
 import TableManagement from '@/components/admin/TableManagement';
@@ -23,15 +23,11 @@ const navItems: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
 ];
 
 function Sidebar({ activeTab, setActiveTab }: { activeTab: AdminTab; setActiveTab: (t: AdminTab) => void }) {
-  const { signOut } = useClerk();
+  const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      await signOut({ redirectUrl: '/QRMENU/' });
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Logout failed');
-    }
+  const handleLogout = () => {
+    clearAdminSession();
+    navigate('/admin-login', { replace: true });
   };
 
   return (
@@ -145,12 +141,13 @@ function DashboardView() {
 function WaiterManagement() {
   const { waiters, addWaiter, deleteWaiter, toggleWaiterStatus } = useRestaurantStore();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '' });
+  const [form, setForm] = useState({ name: '', email: '', pin: '' });
 
   const handleAdd = () => {
-    if (!form.name || !form.email) { toast.error('Fill all fields'); return; }
-    addWaiter({ name: form.name, email: form.email, active: true });
-    setForm({ name: '', email: '' });
+    if (!form.name || !form.email || !form.pin) { toast.error('Fill all fields'); return; }
+    if (!/^\d{4}$/.test(form.pin)) { toast.error('PIN must be exactly 4 digits'); return; }
+    addWaiter({ name: form.name, email: form.email, active: true, pin: form.pin });
+    setForm({ name: '', email: '', pin: '' });
     setShowForm(false);
     toast.success('Waiter registered');
   };
@@ -163,9 +160,6 @@ function WaiterManagement() {
           <p className="text-muted-foreground mt-1">Manage your restaurant waiters and staff access.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/waiter">
-            <Button size="sm" variant="outline" className="rounded-full font-semibold">Open Waiter Interface</Button>
-          </Link>
           <Button onClick={() => setShowForm(!showForm)} className="rounded-full font-semibold shadow-md pt-0 pb-0 flex items-center"><Plus className="h-4 w-4 mr-1.5" /> Register Staff</Button>
         </div>
       </div>
@@ -173,7 +167,7 @@ function WaiterManagement() {
       {showForm && (
         <div className="border border-border/50 bg-card rounded-2xl p-6 mb-8 shadow-sm">
           <h3 className="font-bold mb-4">New Staff Member</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="space-y-1.5">
                <label className="text-sm font-semibold text-muted-foreground">Full Name</label>
                <input className="w-full bg-background border border-border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 transition-all shadow-sm" placeholder="e.g. John Doe" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -181,6 +175,10 @@ function WaiterManagement() {
             <div className="space-y-1.5">
                <label className="text-sm font-semibold text-muted-foreground">Email Address</label>
                <input className="w-full bg-background border border-border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 transition-all shadow-sm" placeholder="e.g. john@example.com" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+               <label className="text-sm font-semibold text-muted-foreground">4-Digit PIN</label>
+               <input className="w-full bg-background border border-border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 transition-all shadow-sm" placeholder="e.g. 1234" type="password" maxLength={4} value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })} />
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-2 border-t border-border/50">

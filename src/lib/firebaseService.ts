@@ -312,6 +312,7 @@ export interface FirebaseOrder {
   readyAt: number;
   paymentMethod?: 'cash' | 'online';
   assignedWaiterId?: string;
+  customerEmail?: string;
 }
 
 export interface FirebaseNotification {

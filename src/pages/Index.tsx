@@ -46,6 +46,12 @@ export default function Index() {
                 Admin Panel
               </Button>
             </Link>
+            <Link to="/waiter-login">
+              <Button variant="outline" size="lg" className="gap-2 w-full sm:w-auto">
+                <UtensilsCrossed className="h-4 w-4" />
+                Waiter Panel
+              </Button>
+            </Link>
           </div>
 
           {/* Feature highlights */}

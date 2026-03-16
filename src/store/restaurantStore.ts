@@ -34,6 +34,7 @@ export interface Order {
   readyAt: number;
   paymentMethod?: 'cash' | 'online';
   assignedWaiterId?: string;
+  customerEmail?: string;
 }
 
 export interface Table {
@@ -47,6 +48,7 @@ export interface Waiter {
   name: string;
   email: string;
   active: boolean;
+  pin: string; // 4-digit PIN for waiter login
 }
 
 export interface Notification {
@@ -136,9 +138,9 @@ const sampleTables: Table[] = [
 ];
 
 const sampleWaiters: Waiter[] = [
-  { id: 'W1', name: 'Ravi Kumar', email: 'ravi@restaurant.com', active: true },
-  { id: 'W2', name: 'Priya Singh', email: 'priya@restaurant.com', active: true },
-  { id: 'W3', name: 'Ankit Sharma', email: 'ankit@restaurant.com', active: false },
+  { id: 'W1', name: 'Ravi Kumar', email: 'ravi@restaurant.com', active: true, pin: '1111' },
+  { id: 'W2', name: 'Priya Singh', email: 'priya@restaurant.com', active: true, pin: '2222' },
+  { id: 'W3', name: 'Ankit Sharma', email: 'ankit@restaurant.com', active: false, pin: '3333' },
 ];
 
 interface RestaurantStore {
@@ -178,11 +180,13 @@ interface RestaurantStore {
   tables: Table[];
   addTable: (number: number) => void;
   deleteTable: (id: string) => void;
+  vacateTable: (tableId: string) => void;
 
   waiters: Waiter[];
   addWaiter: (waiter: Omit<Waiter, 'id'>) => void;
   deleteWaiter: (id: string) => void;
   toggleWaiterStatus: (id: string) => void;
+  updateWaiterPin: (id: string, pin: string) => void;
 
   notifications: Notification[];
   setNotifications: (notifications: Notification[]) => void;
@@ -362,6 +366,10 @@ export const useRestaurantStore = create<RestaurantStore>()(
         tables: [...state.tables, { id: `T${Date.now()}`, number, status: 'available' }],
       })),
       deleteTable: (id) => set((state) => ({ tables: state.tables.filter((t) => t.id !== id) })),
+      vacateTable: (tableId) => set((state) => ({
+        tables: state.tables.map((t) => t.id === tableId ? { ...t, status: 'available' } : t),
+        orders: state.orders.map((o) => o.tableId === tableId && o.status === 'served' ? { ...o, status: 'served' } : o),
+      })),
 
       waiters: sampleWaiters,
       addWaiter: (waiter) => set((state) => ({
@@ -370,6 +378,9 @@ export const useRestaurantStore = create<RestaurantStore>()(
       deleteWaiter: (id) => set((state) => ({ waiters: state.waiters.filter((w) => w.id !== id) })),
       toggleWaiterStatus: (id) => set((state) => ({
         waiters: state.waiters.map((w) => w.id === id ? { ...w, active: !w.active } : w),
+      })),
+      updateWaiterPin: (id, pin) => set((state) => ({
+        waiters: state.waiters.map((w) => w.id === id ? { ...w, pin } : w),
       })),
 
       notifications: [],
