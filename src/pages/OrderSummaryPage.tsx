@@ -6,54 +6,51 @@ import { OrderItemsList } from '@/components/OrderItemsList';
 import { OrderStatusBadge } from '@/components/OrderStatusBadge';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
 import { calculateWaitingTime, formatOrderTime } from '@/lib/orderUtils';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { sendBillEmail, isEmailConfigured } from '@/lib/emailService';
+import { ArrowLeft, Plus, Mail, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-/**
- * OrderSummaryPage component displays order summary and allows adding more items
- * Route: /order-summary/:tableId
- * Requirements: 3.1, 3.2, 3.3, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.4, 5.6
- */
 export default function OrderSummaryPage() {
   const { tableId } = useParams<{ tableId: string }>();
   const navigate = useNavigate();
-  const { getOrderByTableId, currentTableId, setCurrentTableId } = useRestaurantStore();
+  const { currentTableId, setCurrentTableId } = useRestaurantStore();
   const [waitingTime, setWaitingTime] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [notFoundTimer, setNotFoundTimer] = useState(false);
+  const [email, setEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
-  // Set current table on mount
   useEffect(() => {
-    if (tableId) {
-      setCurrentTableId(tableId);
-    }
+    if (tableId) setCurrentTableId(tableId);
   }, [tableId, setCurrentTableId]);
 
-  // Get order from store
-  const order = tableId ? getOrderByTableId(tableId) : null;
+  const order = useRestaurantStore((state) =>
+    tableId ? state.orders.find((o) => o.tableId === tableId && o.status !== 'served') ?? null : null
+  );
 
-  // Update waiting time every 10 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => setNotFoundTimer(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     if (!order) {
-      setIsLoading(false);
+      if (notFoundTimer) setIsLoading(false);
       return;
     }
-
     setIsLoading(false);
-    const updateWaitingTime = () => {
-      setWaitingTime(calculateWaitingTime(order.createdAt));
-    };
-
-    updateWaitingTime();
-    const interval = setInterval(updateWaitingTime, 10000);
-
+    const update = () => setWaitingTime(calculateWaitingTime(order.createdAt));
+    update();
+    const interval = setInterval(update, 10000);
     return () => clearInterval(interval);
-  }, [order]);
+  }, [order, notFoundTimer]);
 
-  if (isLoading) {
+  if (isLoading || (!order && !notFoundTimer)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Loading order...</p>
         </div>
       </div>
@@ -68,16 +65,35 @@ export default function OrderSummaryPage() {
           <p className="text-muted-foreground mb-6">
             We couldn't find an active order for this table. Please start a new order.
           </p>
-          <Button onClick={() => navigate(`/menu/${tableId}`)}>
-            Back to Menu
-          </Button>
+          <Button onClick={() => navigate(`/menu/${tableId}`)}>Back to Menu</Button>
         </div>
       </div>
     );
   }
 
-  const handleAddMoreItems = () => {
-    navigate(`/menu/${tableId}`);
+  const handleSendBill = async () => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      await sendBillEmail({
+        toEmail: email,
+        tableId: tableId!,
+        orderId: order.id,
+        items: order.items,
+        total: order.total,
+        paymentMethod: order.paymentMethod || 'cash',
+        orderTime: formatOrderTime(order.createdAt),
+      });
+      setEmailSent(true);
+      toast.success(`Bill sent to ${email}`);
+    } catch (e: any) {
+      toast.error(`Failed to send email: ${e?.message || 'Please try again'}`);
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const handleCompleteOrder = () => {
@@ -85,8 +101,8 @@ export default function OrderSummaryPage() {
       toast.error('Please select a payment method');
       return;
     }
-    toast.success('Order completed! Thank you for your order.');
-    // In a real app, this would proceed to payment processing
+    toast.success('Order placed! Enjoy your meal.');
+    navigate(`/menu/${tableId}`, { replace: true });
   };
 
   return (
@@ -102,12 +118,11 @@ export default function OrderSummaryPage() {
             <span className="text-sm font-medium">Back to Menu</span>
           </button>
           <h1 className="text-xl font-bold">Order Summary</h1>
-          <div className="w-20"></div>
+          <div className="w-20" />
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Order Info */}
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -120,7 +135,6 @@ export default function OrderSummaryPage() {
               <p className="text-lg font-semibold">{formatOrderTime(order.createdAt)}</p>
             </div>
           </div>
-
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Status</p>
             <OrderStatusBadge status={order.status} waitingTime={waitingTime} />
@@ -137,30 +151,55 @@ export default function OrderSummaryPage() {
 
         {/* Payment Method */}
         <div className="bg-card border border-border rounded-lg p-4">
-          <PaymentMethodSelector
-            orderId={order.id}
-            selectedMethod={order.paymentMethod}
-          />
+          <PaymentMethodSelector orderId={order.id} selectedMethod={order.paymentMethod} />
         </div>
+
+        {/* Email Bill — shown once payment method is selected */}
+        {order.paymentMethod && isEmailConfigured && (
+          <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-semibold text-base">Get Bill on Email</h3>
+              <span className="text-xs text-muted-foreground">(optional)</span>
+            </div>
+            {emailSent ? (
+              <div className="p-3 bg-green-500/10 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-700">✓ Bill sent to {email}</p>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendBill()}
+                  className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <Button
+                  onClick={handleSendBill}
+                  disabled={sendingEmail || !email}
+                  size="sm"
+                  className="shrink-0"
+                >
+                  {sendingEmail ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Send'
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="space-y-3">
-          <Button
-            onClick={handleAddMoreItems}
-            variant="outline"
-            className="w-full"
-            size="lg"
-          >
+          <Button onClick={() => navigate(`/menu/${tableId}`)} variant="outline" className="w-full" size="lg">
             <Plus className="h-4 w-4 mr-2" />
             Add More Items
           </Button>
-
-          <Button
-            onClick={handleCompleteOrder}
-            disabled={!order.paymentMethod}
-            className="w-full"
-            size="lg"
-          >
+          <Button onClick={handleCompleteOrder} disabled={!order.paymentMethod} className="w-full" size="lg">
             Complete Order
           </Button>
         </div>

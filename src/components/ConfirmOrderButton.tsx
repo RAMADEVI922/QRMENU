@@ -58,7 +58,7 @@ export function ConfirmOrderButton({
         toast.success('Order confirmed! Redirecting...');
         onSuccess?.(newOrder.id);
 
-        // Redirect to post-order page
+        // Navigate to order summary — push so back button returns to menu
         setTimeout(() => {
           navigate(`/order-summary/${currentTableId}`);
         }, 500);

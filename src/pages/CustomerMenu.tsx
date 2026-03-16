@@ -5,6 +5,7 @@ import { useRestaurantStore, type MenuItem } from '@/store/restaurantStore';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmOrderButton } from '@/components/ConfirmOrderButton';
+import { upsertNotification as upsertNotificationDirect } from '@/lib/firebaseService';
 
 function MenuItemCard({ item }: { item: MenuItem }) {
   const { addToCart, cart, updateCartQuantity, menuItemImages } = useRestaurantStore();
@@ -168,6 +169,7 @@ export default function CustomerMenu() {
   const { tableId } = useParams<{ tableId: string }>();
   const [searchParams] = useSearchParams();
   const sessionType = searchParams.get('type') || 'active';
+  const isDevMode = searchParams.get('dev') === 'true' || window.location.hostname === 'localhost';
   const { menuItems, cart, cartTotal, setCurrentTableId, addNotification, categoryImages, menuItemImages, placeOrder, orders } = useRestaurantStore();
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -202,22 +204,54 @@ export default function CustomerMenu() {
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleCallWaiter = () => {
+  const handleCallWaiter = async () => {
     if (!tableId) return;
-    addNotification({ tableId, type: 'call_waiter', message: `Table ${tableId} is calling for a waiter` });
-    toast.success('Waiter has been notified!');
+    try {
+      await upsertNotificationDirect({
+        id: `N${tableId}_cw_${Date.now()}`,
+        tableId,
+        type: 'call_waiter',
+        message: `Table ${tableId} is calling for a waiter`,
+        read: false,
+        createdAt: Date.now(),
+      });
+      addNotification({ tableId, type: 'call_waiter', message: `Table ${tableId} is calling for a waiter` });
+      toast.success('Waiter has been notified!');
+    } catch (e: any) {
+      toast.error(`Failed to notify waiter: ${e?.message || e}`);
+    }
   };
 
-  const handleRequestBill = () => {
+  const handleRequestBill = async () => {
     if (!tableId) return;
-    addNotification({ tableId, type: 'request_bill', message: `Table ${tableId} is requesting the bill` });
-    toast.success('Bill requested! The waiter will bring it shortly.');
+    try {
+      await upsertNotificationDirect({
+        id: `N${tableId}_rb_${Date.now()}`,
+        tableId,
+        type: 'request_bill',
+        message: `Table ${tableId} is requesting the bill`,
+        read: false,
+        createdAt: Date.now(),
+      });
+      addNotification({ tableId, type: 'request_bill', message: `Table ${tableId} is requesting the bill` });
+      toast.success('Bill requested! The waiter will bring it shortly.');
+    } catch (e: any) {
+      toast.error(`Failed to request bill: ${e?.message || e}`);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background pb-24 max-w-5xl mx-auto">
       {/* Header */}
       <div className="px-4 pt-6 pb-2">
+        {isDevMode && (
+          <button
+            onClick={() => window.location.href = '/'}
+            className="mb-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full hover:bg-muted/80 transition"
+          >
+            ← Dev: Back to Home
+          </button>
+        )}
         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Table {tableId}</p>
         <div className="flex items-center justify-between mt-1">
           <h1 className="text-2xl font-bold">Menu</h1>

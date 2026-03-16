@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRestaurantStore, type Order } from '@/store/restaurantStore';
-import { updateOrderStatus as syncOrderStatus } from '@/lib/firebaseService';
+import { updateOrderStatus as syncOrderStatus, fetchOrders, fetchNotifications, type FirebaseOrder, type FirebaseNotification } from '@/lib/firebaseService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, Clock, Users } from 'lucide-react';
+import { ChevronDown, Clock, Users, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'served';
@@ -136,84 +136,84 @@ function OrderRow({
 
 export default function OrdersQueue() {
   const orders = useRestaurantStore((state) => state.orders);
+  const setOrders = useRestaurantStore((state) => state.setOrders);
+  const setNotifications = useRestaurantStore((state) => state.setNotifications);
   const updateOrderStatus = useRestaurantStore((state) => state.updateOrderStatus);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [displayedOrders, setDisplayedOrders] = useState<Order[]>([]);
-  const [, setUpdateTrigger] = useState(0); // Trigger re-render every minute
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [, setUpdateTrigger] = useState(0);
 
-  // Update waiting time every minute to prevent constant blinking
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [firebaseOrders, firebaseNotifs] = await Promise.all([
+        fetchOrders(),
+        fetchNotifications(),
+      ]);
+      setOrders(firebaseOrders.map((o: FirebaseOrder) => ({ ...o, createdAt: new Date(o.createdAt) })));
+      setNotifications(firebaseNotifs.map((n: FirebaseNotification) => ({ ...n, createdAt: new Date(n.createdAt) })));
+      setLastRefreshed(new Date());
+    } catch (e: any) {
+      toast.error(`Refresh failed: ${e?.message || e}`);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [setOrders, setNotifications]);
+
+  // Auto-refresh on mount and every 30 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      setUpdateTrigger(prev => prev + 1);
-    }, 60000); // Update every 60 seconds
+    refresh();
+    const interval = setInterval(refresh, 120000); // 2 minutes to conserve Firestore quota
+    return () => clearInterval(interval);
+  }, [refresh]);
 
+  // Update waiting time every minute
+  useEffect(() => {
+    const interval = setInterval(() => setUpdateTrigger(prev => prev + 1), 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // Debug: Log when orders change
-  useEffect(() => {
-    console.log('📊 OrdersQueue: Orders updated', orders.length, 'orders');
-    orders.forEach((order) => {
-      console.log(`  - Table ${order.tableId}: ${order.items.length} items, Status: ${order.status}`);
-    });
-  }, [orders]);
-
   // Update displayed orders whenever orders or filter changes
   useEffect(() => {
-    console.log('📊 OrdersQueue: Filtering orders with filter:', selectedFilter);
-    
     let filtered = [...orders];
-
-    // Filter by status - be explicit about each case
     if (selectedFilter === 'pending') {
       filtered = filtered.filter((o) => o.status === 'pending');
     } else if (selectedFilter === 'served') {
       filtered = filtered.filter((o) => o.status === 'served');
     } else {
-      // Show all non-served orders for 'all' filter
       filtered = filtered.filter((o) => o.status !== 'served');
     }
-
-    // Sort by creation time (FIFO - oldest first)
     filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-
-    // Only update if filtered orders actually changed
-    const filteredJson = JSON.stringify(filtered);
-    const displayedJson = JSON.stringify(displayedOrders);
-    
-    if (filteredJson !== displayedJson) {
-      console.log('📊 OrdersQueue: Displaying', filtered.length, 'orders after filter:', selectedFilter);
-      setDisplayedOrders(filtered);
-    }
-  }, [orders, selectedFilter, displayedOrders]);
+    setDisplayedOrders(filtered);
+  }, [orders, selectedFilter]);
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     updateOrderStatus(orderId, newStatus);
-    
-    // Sync to Firebase
     syncOrderStatus(orderId, newStatus).catch((error) => {
       console.warn('Failed to sync order status to Firebase:', error);
     });
-    
-    const order = orders.find((o) => o.id === orderId);
-    if (order) {
-      toast.success(`Order ${orderId} marked as ${statusColors[newStatus].label}`);
-    }
+    toast.success(`Order marked as ${statusColors[newStatus].label}`);
   };
 
-  const handleFilterChange = (filter: FilterType) => {
-    setSelectedFilter(filter);
-  };
-
-  const completedOrders = orders.filter((o) => o.status === 'served').sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const completedOrders = orders
+    .filter((o) => o.status === 'served')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-extrabold tracking-tight">Orders Queue</h2>
-        <p className="text-muted-foreground mt-1">Manage orders in FIFO order. Oldest orders appear first.</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-extrabold tracking-tight">Orders Queue</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString()}` : 'Loading...'}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing} className="gap-1.5">
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </Button>
       </div>
 
       {/* Filter Buttons */}
@@ -223,7 +223,7 @@ export default function OrdersQueue() {
             key={filter}
             variant={selectedFilter === filter ? 'default' : 'outline'}
             size="sm"
-            onClick={() => handleFilterChange(filter)}
+            onClick={() => setSelectedFilter(filter)}
             className="rounded-full capitalize"
           >
             {filter === 'all' ? 'All Orders' : filter}

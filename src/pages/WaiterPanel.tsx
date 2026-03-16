@@ -1,12 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRestaurantStore } from '@/store/restaurantStore';
+import { fetchOrders, fetchNotifications, type FirebaseOrder, type FirebaseNotification } from '@/lib/firebaseService';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Bell, Receipt, UtensilsCrossed, ChevronRight } from 'lucide-react';
+import { Check, Clock, Bell, Receipt, UtensilsCrossed, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
 export default function WaiterPanel() {
-  const { orders, updateOrderStatus, notifications, markNotificationRead } = useRestaurantStore();
+  const { orders, setOrders, updateOrderStatus, notifications, setNotifications, markNotificationRead } = useRestaurantStore();
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   const pendingOrders = orders.filter((o) => o.status === 'pending');
   const confirmedOrders = orders.filter((o) => o.status === 'confirmed' || o.status === 'preparing');
@@ -14,27 +17,61 @@ export default function WaiterPanel() {
 
   const prevNotificationCount = useRef(unreadNotifications.length);
 
+  // Play a beep when new notifications arrive
   useEffect(() => {
     if (unreadNotifications.length > prevNotificationCount.current) {
       const latest = unreadNotifications[0];
       if (latest) {
-        const tableNum = Number(latest.tableId.replace(/\D/g, '')) || 1;
-        const frequency = 440 + (tableNum - 1) * 50;
-        const duration = 0.18;
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.frequency.value = frequency;
-        osc.type = 'sine';
-        gain.gain.value = 0.2;
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + duration);
+        try {
+          const tableNum = Number(latest.tableId.replace(/\D/g, '')) || 1;
+          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.frequency.value = 440 + (tableNum - 1) * 50;
+          osc.type = 'sine';
+          gain.gain.value = 0.2;
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.18);
+        } catch (_) { /* audio not available */ }
       }
     }
     prevNotificationCount.current = unreadNotifications.length;
   }, [unreadNotifications]);
+
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [firebaseOrders, firebaseNotifs] = await Promise.all([
+        fetchOrders(),
+        fetchNotifications(),
+      ]);
+      const convertedOrders = firebaseOrders.map((o: FirebaseOrder) => ({
+        ...o,
+        createdAt: new Date(o.createdAt),
+      }));
+      setOrders(convertedOrders);
+
+      const convertedNotifs = firebaseNotifs.map((n: FirebaseNotification) => ({
+        ...n,
+        createdAt: new Date(n.createdAt),
+      }));
+      setNotifications(convertedNotifs);
+      setLastRefreshed(new Date());
+    } catch (e: any) {
+      toast.error(`Refresh failed: ${e?.message || e}`);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [setOrders, setNotifications]);
+
+  // Auto-refresh on mount and every 30 seconds
+  useEffect(() => {
+    refresh();
+    const interval = setInterval(refresh, 120000); // 2 minutes to conserve Firestore quota
+    return () => clearInterval(interval);
+  }, [refresh]);
 
   const handleConfirmOrder = (orderId: string) => {
     updateOrderStatus(orderId, 'confirmed');
@@ -48,12 +85,13 @@ export default function WaiterPanel() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-background sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="font-bold text-lg">Waiter Panel</h1>
-            <p className="text-xs text-muted-foreground">Order Management</p>
+            <p className="text-xs text-muted-foreground">
+              {lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString()}` : 'Loading...'}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -64,6 +102,16 @@ export default function WaiterPanel() {
                 </span>
               )}
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refresh}
+              disabled={refreshing}
+              className="gap-1.5"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
             <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">Home</Link>
           </div>
         </div>
@@ -74,7 +122,7 @@ export default function WaiterPanel() {
         {unreadNotifications.length > 0 && (
           <div className="space-y-2">
             <h2 className="category-header mb-3">Notifications</h2>
-            <div>
+            <div className="space-y-2">
               {unreadNotifications.map((n) => (
                 <div
                   key={n.id}

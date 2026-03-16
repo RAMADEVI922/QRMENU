@@ -304,7 +304,7 @@ export const useRestaurantStore = create<RestaurantStore>()(
         };
         set((state) => ({ orders: [order, ...state.orders] }));
         upsertOrder({ ...order, createdAt: order.createdAt.getTime() } as FirebaseOrder)
-          .catch((e) => console.warn("Failed to sync order:", e));
+          .catch((e) => console.error('[placeOrder] FIRESTORE WRITE FAILED:', e));
         addNotification({ tableId, type: 'order', message: `New order from Table ${tableId}` });
         clearCart();
       },
@@ -341,10 +341,12 @@ export const useRestaurantStore = create<RestaurantStore>()(
       notifications: [],
       setNotifications: (notifications) => set({ notifications }),
       addNotification: (notification) => {
-        const newNotif = { ...notification, id: `N${Date.now()}`, createdAt: new Date(), read: false };
+        const newNotif = { ...notification, id: `N${notification.tableId}_${Date.now()}`, createdAt: new Date(), read: false };
         set((state) => ({ notifications: [newNotif, ...state.notifications] }));
+        console.log('[addNotification] saving to Firestore:', newNotif.id, newNotif.type);
         upsertNotification({ ...newNotif, createdAt: newNotif.createdAt.getTime() } as FirebaseNotification)
-          .catch((e) => console.warn("Failed to sync notification:", e));
+          .then(() => console.log('[addNotification] saved successfully:', newNotif.id))
+          .catch((e) => console.error('[addNotification] FIRESTORE WRITE FAILED:', e));
       },
       markNotificationRead: (id) => {
         set((state) => ({
@@ -367,11 +369,10 @@ export const useRestaurantStore = create<RestaurantStore>()(
         cart: state.cart,
         tables: state.tables,
         waiters: state.waiters,
-        notifications: state.notifications,
         currentTableId: state.currentTableId,
         categoryImages: state.categoryImages,
         menuItemImages: state.menuItemImages,
-        orders: state.orders,
+        // orders and notifications are NOT persisted — always fetched fresh from Firestore
       }),
     }
   )

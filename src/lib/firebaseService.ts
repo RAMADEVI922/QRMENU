@@ -324,12 +324,23 @@ export interface FirebaseNotification {
 
 export async function upsertOrder(order: FirebaseOrder): Promise<void> {
   const ordersCollection = getOrdersCollection();
-  if (!isFirebaseConfigured || !ordersCollection) return;
+  if (!isFirebaseConfigured || !ordersCollection) {
+    console.error('[upsertOrder] Firebase not configured');
+    return;
+  }
   try {
     const docRef = doc(ordersCollection, order.id);
-    await setDoc(docRef, { ...order });
+    // Strip base64 images from items — Firestore has a 1MB doc limit
+    const sanitizedItems = order.items.map(({ image: _image, ...rest }) => rest);
+    const clean = Object.fromEntries(
+      Object.entries({ ...order, items: sanitizedItems }).filter(([, v]) => v !== undefined)
+    );
+    console.log('[upsertOrder] saving order:', order.id, 'table:', order.tableId, 'items:', sanitizedItems.length);
+    await setDoc(docRef, clean);
+    console.log('[upsertOrder] SUCCESS:', order.id);
   } catch (error) {
-    console.warn('Failed to upsert order:', error);
+    console.error('[upsertOrder] FAILED:', error);
+    throw error;
   }
 }
 
@@ -337,12 +348,12 @@ export async function fetchOrders(): Promise<FirebaseOrder[]> {
   const ordersCollection = getOrdersCollection();
   if (!isFirebaseConfigured || !ordersCollection) return [];
   try {
-    const q = query(ordersCollection, orderBy("createdAt", "desc"));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
+    const snapshot = await getDocs(ordersCollection);
+    const orders = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...(doc.data() as Omit<FirebaseOrder, "id">),
     }));
+    return orders.sort((a, b) => b.createdAt - a.createdAt);
   } catch (error) {
     console.warn('Failed to fetch orders from Firebase:', error);
     return [];
@@ -353,12 +364,12 @@ export function watchOrders(onChanged: (orders: FirebaseOrder[]) => void): () =>
   const ordersCollection = getOrdersCollection();
   if (!isFirebaseConfigured || !ordersCollection) return () => {};
   try {
-    const q = query(ordersCollection, orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snapshot) => {
+    return onSnapshot(ordersCollection, (snapshot) => {
       const orders = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...(doc.data() as Omit<FirebaseOrder, "id">),
       }));
+      orders.sort((a, b) => b.createdAt - a.createdAt);
       onChanged(orders);
     });
   } catch (error) {
@@ -369,12 +380,19 @@ export function watchOrders(onChanged: (orders: FirebaseOrder[]) => void): () =>
 
 export async function upsertNotification(notification: FirebaseNotification): Promise<void> {
   const notificationsCollection = getNotificationsCollection();
-  if (!isFirebaseConfigured || !notificationsCollection) return;
+  if (!isFirebaseConfigured || !notificationsCollection) {
+    console.error('[upsertNotification] Firebase not configured! db=', db, 'isConfigured=', isFirebaseConfigured);
+    return;
+  }
   try {
     const docRef = doc(notificationsCollection, notification.id);
-    await setDoc(docRef, { ...notification });
+    const clean = Object.fromEntries(Object.entries(notification).filter(([, v]) => v !== undefined));
+    console.log('[upsertNotification] attempting write:', notification.id, notification.type, 'to collection: notifications');
+    await setDoc(docRef, clean);
+    console.log('[upsertNotification] SUCCESS saved', notification.id, notification.type);
   } catch (error) {
-    console.warn('Failed to upsert notification:', error);
+    console.error('[upsertNotification] FAILED:', error);
+    throw error; // re-throw so caller can see it
   }
 }
 
@@ -382,12 +400,14 @@ export async function fetchNotifications(): Promise<FirebaseNotification[]> {
   const notificationsCollection = getNotificationsCollection();
   if (!isFirebaseConfigured || !notificationsCollection) return [];
   try {
-    const q = query(notificationsCollection, orderBy("createdAt", "desc"));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
+    // No orderBy — avoids needing a Firestore index on a new collection
+    const snapshot = await getDocs(notificationsCollection);
+    const notifications = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...(doc.data() as Omit<FirebaseNotification, "id">),
     }));
+    // Sort client-side
+    return notifications.sort((a, b) => b.createdAt - a.createdAt);
   } catch (error) {
     console.warn('Failed to fetch notifications:', error);
     return [];
@@ -396,18 +416,30 @@ export async function fetchNotifications(): Promise<FirebaseNotification[]> {
 
 export function watchNotifications(onChanged: (notifications: FirebaseNotification[]) => void) {
   const notificationsCollection = getNotificationsCollection();
-  if (!isFirebaseConfigured || !notificationsCollection) return () => {};
+  if (!isFirebaseConfigured || !notificationsCollection) {
+    console.warn('[watchNotifications] Firebase not configured');
+    return () => {};
+  }
   try {
-    const q = query(notificationsCollection, orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snapshot) => {
-      const notifications = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<FirebaseNotification, "id">),
-      }));
-      onChanged(notifications);
-    });
+    // No orderBy — avoids needing a Firestore index, sort client-side instead
+    console.log('[watchNotifications] listener started');
+    return onSnapshot(notificationsCollection,
+      (snapshot) => {
+        const notifications = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<FirebaseNotification, "id">),
+        }));
+        // Sort newest first client-side
+        notifications.sort((a, b) => b.createdAt - a.createdAt);
+        console.log('[watchNotifications] received', notifications.length, 'notifications');
+        onChanged(notifications);
+      },
+      (error) => {
+        console.error('[watchNotifications] listener error:', error);
+      }
+    );
   } catch (error) {
-    console.warn('Failed to watch notifications:', error);
+    console.error('[watchNotifications] setup failed:', error);
     return () => {};
   }
 }
