@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRestaurantStore } from '@/store/restaurantStore';
+import { fetchWaiters } from '@/lib/firebaseService';
 import { Button } from '@/components/ui/button';
 import { UtensilsCrossed, Delete, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -69,7 +70,16 @@ function Numpad({ value, onChange, max = 4 }: { value: string; onChange: (v: str
 
 export default function WaiterLogin() {
   const navigate = useNavigate();
-  const { waiters, updateWaiterPin } = useRestaurantStore();
+  const { waiters, updateWaiterPin, setWaiters } = useRestaurantStore();
+  const [loadingWaiters, setLoadingWaiters] = useState(true);
+
+  // Always load from Firestore — never trust localStorage for waiters
+  useEffect(() => {
+    fetchWaiters().then((fbWaiters) => {
+      setWaiters(fbWaiters);
+    }).catch(() => {}).finally(() => setLoadingWaiters(false));
+  }, []);
+
   const activeWaiters = waiters.filter((w) => w.active);
 
   const [screen, setScreen] = useState<Screen>('pick');
@@ -179,7 +189,13 @@ export default function WaiterLogin() {
         {screen === 'pick' && (
           <div className="bg-white rounded-2xl shadow-sm border border-border p-6 space-y-3">
             <p className="text-sm font-semibold text-muted-foreground mb-2">Who are you?</p>
-            {activeWaiters.map((w) => (
+            {loadingWaiters ? (
+              <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading...
+              </div>
+            ) : activeWaiters.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-4">No active waiters. Ask admin to add your account.</p>
+            ) : activeWaiters.map((w) => (
               <button
                 key={w.id}
                 onClick={() => { setSelectedId(w.id); setPin(''); setPinError(''); setScreen('pin'); }}
@@ -194,9 +210,6 @@ export default function WaiterLogin() {
                 </div>
               </button>
             ))}
-            {activeWaiters.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-4">No active waiters. Ask admin to activate your account.</p>
-            )}
           </div>
         )}
 

@@ -492,7 +492,7 @@ export const useRestaurantStore = create<RestaurantStore>()(
       setCurrentTableId: (id) => set({ currentTableId: id }),
     }),
     {
-      name: 'qr-menu-store-v2',
+      name: 'qr-menu-store-v3',
       partialize: (state) => ({
         cart: state.cart,
         tables: state.tables,
