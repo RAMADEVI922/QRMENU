@@ -51,13 +51,5 @@
 
   <body style="margin: 0; padding: 0; background-color: #ffffff; color: #000000;">
     <div id="root"></div>
-    <script type="text/javascript">
-      // Register service worker only in production
-      if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
-        navigator.serviceWorker.register('/sw.js').catch((err) => {
-          console.log('Service Worker registration failed:', err);
-        });
-      }
-    </script>
   </body>
 </html>
