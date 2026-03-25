@@ -34,7 +34,7 @@ export default function Index() {
           <source src={BG_VIDEOS[1]} type="video/mp4" />
         </video>
         {/* Dark gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
+        <div className="absolute inset-0 bg-black/50" />
       </div>
 
       {/* ── Header ── */}
@@ -74,7 +74,7 @@ export default function Index() {
 
           {/* CTA buttons */}
           <div
-            className="mt-8 flex flex-col sm:flex-row gap-3 justify-center animate-fade-in"
+            className="mt-8 animate-fade-in"
             style={{ animationDelay: '0.1s' }}
           >
             <style>{`
@@ -105,56 +105,64 @@ export default function Index() {
               .btn-hovered { animation: none !important; transform: scale(1.18) !important; transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); }
             `}</style>
 
-            {/* View Demo Menu */}
-            <Link
-              to="/menu/T1"
-              className={`btn-float-a relative z-30 transition-all duration-350 ${hoveredBtn === 'menu' ? 'btn-hovered' : hoveredBtn ? 'opacity-20 scale-95' : ''}`}
-              onMouseEnter={() => setHoveredBtn('menu')}
-              onMouseLeave={() => setHoveredBtn(null)}
-            >
-              <Button
-                size="lg"
-                className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white border-0 shadow-2xl shadow-orange-500/50"
-              >
-                <UtensilsCrossed className="h-4 w-4" />
-                View Demo Menu
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            {/* Frosted backdrop behind buttons */}
+            <div className={`inline-flex flex-col sm:flex-row gap-4 items-center justify-center px-8 py-5 rounded-3xl transition-all duration-500 ${
+              hoveredBtn
+                ? 'bg-black/10 backdrop-blur-none'
+                : 'bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl'
+            }`}>
 
-            {/* Admin Panel */}
-            <Link
-              to="/admin-login"
-              className={`btn-float-b relative z-30 transition-all duration-350 ${hoveredBtn === 'admin' ? 'btn-hovered' : hoveredBtn ? 'opacity-20 scale-95' : ''}`}
-              onMouseEnter={() => setHoveredBtn('admin')}
-              onMouseLeave={() => setHoveredBtn(null)}
-            >
-              <Button
-                variant="outline"
-                size="lg"
-                className="gap-2 w-full sm:w-auto bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm shadow-xl shadow-white/10"
+              {/* View Demo Menu */}
+              <Link
+                to="/menu/T1"
+                className={`btn-float-a relative z-30 transition-all duration-350 ${hoveredBtn === 'menu' ? 'btn-hovered' : hoveredBtn ? 'opacity-20 scale-95' : ''}`}
+                onMouseEnter={() => setHoveredBtn('menu')}
+                onMouseLeave={() => setHoveredBtn(null)}
               >
-                <Shield className="h-4 w-4" />
-                Admin Panel
-              </Button>
-            </Link>
+                <Button
+                  size="lg"
+                  className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white border-0 shadow-2xl shadow-orange-500/50"
+                >
+                  <UtensilsCrossed className="h-4 w-4" />
+                  View Demo Menu
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
 
-            {/* Waiter Panel */}
-            <Link
-              to="/waiter-login"
-              className={`btn-float-c relative z-30 transition-all duration-350 ${hoveredBtn === 'waiter' ? 'btn-hovered' : hoveredBtn ? 'opacity-20 scale-95' : ''}`}
-              onMouseEnter={() => setHoveredBtn('waiter')}
-              onMouseLeave={() => setHoveredBtn(null)}
-            >
-              <Button
-                variant="outline"
-                size="lg"
-                className="gap-2 w-full sm:w-auto bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm shadow-xl shadow-white/10"
+              {/* Admin Panel */}
+              <Link
+                to="/admin-login"
+                className={`btn-float-b relative z-30 transition-all duration-350 ${hoveredBtn === 'admin' ? 'btn-hovered' : hoveredBtn ? 'opacity-20 scale-95' : ''}`}
+                onMouseEnter={() => setHoveredBtn('admin')}
+                onMouseLeave={() => setHoveredBtn(null)}
               >
-                <UtensilsCrossed className="h-4 w-4" />
-                Waiter Panel
-              </Button>
-            </Link>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 w-full sm:w-auto bg-white/20 border-white/40 text-white hover:bg-white/30 backdrop-blur-sm shadow-xl"
+                >
+                  <Shield className="h-4 w-4" />
+                  Admin Panel
+                </Button>
+              </Link>
+
+              {/* Waiter Panel */}
+              <Link
+                to="/waiter-login"
+                className={`btn-float-c relative z-30 transition-all duration-350 ${hoveredBtn === 'waiter' ? 'btn-hovered' : hoveredBtn ? 'opacity-20 scale-95' : ''}`}
+                onMouseEnter={() => setHoveredBtn('waiter')}
+                onMouseLeave={() => setHoveredBtn(null)}
+              >
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 w-full sm:w-auto bg-white/20 border-white/40 text-white hover:bg-white/30 backdrop-blur-sm shadow-xl"
+                >
+                  <UtensilsCrossed className="h-4 w-4" />
+                  Waiter Panel
+                </Button>
+              </Link>
+            </div>
           </div>
 
         </div>
