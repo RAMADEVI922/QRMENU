@@ -76,7 +76,7 @@ export default function WaiterLogin() {
   // Always load from Firestore — never trust localStorage for waiters
   useEffect(() => {
     fetchWaiters().then((fbWaiters) => {
-      setWaiters(fbWaiters);
+      if (fbWaiters.length > 0) setWaiters(fbWaiters);
     }).catch(() => {}).finally(() => setLoadingWaiters(false));
   }, []);
 

@@ -496,12 +496,12 @@ export const useRestaurantStore = create<RestaurantStore>()(
       partialize: (state) => ({
         cart: state.cart,
         tables: state.tables,
+        waiters: state.waiters, // cached locally, always refreshed from Firestore on mount
         currentTableId: state.currentTableId,
         categoryImages: state.categoryImages,
         menuItemImages: state.menuItemImages,
         paymentQRCodes: state.paymentQRCodes,
         paymentUPIIds: state.paymentUPIIds,
-        // waiters, orders and notifications are NOT persisted — always fetched fresh from Firestore
       }),
     }
   )

@@ -800,7 +800,7 @@ export default function AdminPanel() {
   // Always load waiters from Firestore on mount so all admins see the same list
   useEffect(() => {
     fetchWaiters().then((fbWaiters) => {
-      setWaiters(fbWaiters); // even if empty — don't seed defaults
+      if (fbWaiters.length > 0) setWaiters(fbWaiters);
     }).catch(() => {});
   }, []);
 
