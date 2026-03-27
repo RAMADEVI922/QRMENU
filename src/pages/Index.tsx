@@ -28,23 +28,12 @@ export default function Index() {
             <QrCode className="h-6 w-6 text-orange-400" />
             <span className="font-bold text-lg text-white">QR Menu</span>
           </div>
-          <Link to="/menu/T1">
-            <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10">
-              View Menu
-            </Button>
-          </Link>
         </div>
       </header>
 
       {/* ── Hero ── */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-6">
         <div className="max-w-2xl text-center">
-
-          {/* Badge */}
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/20 border border-orange-400/30 text-orange-300 text-xs font-semibold mb-6 backdrop-blur-sm animate-fade-in transition-all duration-500 ${hoveredBtn ? 'opacity-10' : 'opacity-100'}`}>
-            <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" />
-            Contactless Dining Experience
-          </div>
 
           <div className={`animate-fade-in transition-all duration-500 ${hoveredBtn ? 'opacity-10' : 'opacity-100'}`}>
             <h1 className="text-4xl sm:text-6xl font-bold leading-tight tracking-tight text-white drop-shadow-lg">
