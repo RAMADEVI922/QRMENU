@@ -1,7 +1,96 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { QrCode, Shield, UtensilsCrossed, ArrowRight } from 'lucide-react';
+
+// ── Pixel explosion on "Dining." ──────────────────────────────────────────────
+function DiningWord() {
+  const [exploded, setExploded] = useState(false);
+  const [particles, setParticles] = useState<Array<{id:number;char:string;x:number;y:number;vx:number;vy:number;rot:number;opacity:number}>>([]);
+  const containerRef = useRef<HTMLSpanElement>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleClick = useCallback(() => {
+    if (exploded) return;
+    setExploded(true);
+
+    const chars = 'Dining.'.split('');
+    const newParticles = chars.map((char, i) => ({
+      id: i,
+      char,
+      x: (i - chars.length / 2) * 38,
+      y: 0,
+      vx: (Math.random() - 0.5) * 300,
+      vy: -(Math.random() * 200 + 100),
+      rot: (Math.random() - 0.5) * 720,
+      opacity: 1,
+    }));
+    setParticles(newParticles);
+
+    // Reassemble after 1.2s
+    timeoutRef.current = setTimeout(() => {
+      setExploded(false);
+      setParticles([]);
+    }, 1200);
+  }, [exploded]);
+
+  return (
+    <span
+      ref={containerRef}
+      className="relative inline-block cursor-pointer select-none"
+      onClick={handleClick}
+      title="Click me!"
+    >
+      <style>{`
+        @keyframes particle {
+          0%   { transform: translate(var(--px), var(--py)) rotate(0deg); opacity: 1; }
+          60%  { opacity: 0.8; }
+          100% { transform: translate(calc(var(--px) * 3), calc(var(--py) * 3 + 200px)) rotate(var(--rot)); opacity: 0; }
+        }
+        .particle-char {
+          position: absolute;
+          animation: particle 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          pointer-events: none;
+          font-weight: bold;
+          color: #fb923c;
+          font-size: inherit;
+          white-space: nowrap;
+        }
+        @keyframes reassemble {
+          0%   { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+          100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+        .dining-reassemble {
+          animation: reassemble 0.4s ease-out forwards;
+        }
+      `}</style>
+
+      {/* Original text — hidden when exploded */}
+      <span className={`text-orange-400 transition-opacity duration-100 ${exploded ? 'opacity-0' : 'dining-reassemble'}`}>
+        Dining.
+      </span>
+
+      {/* Particles */}
+      {exploded && particles.map((p) => (
+        <span
+          key={p.id}
+          className="particle-char"
+          style={{
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            '--px': `${p.vx * 0.3}px`,
+            '--py': `${p.vy * 0.3}px`,
+            '--rot': `${p.rot}deg`,
+            animationDelay: `${p.id * 0.03}s`,
+          } as React.CSSProperties}
+        >
+          {p.char}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 export default function Index() {
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
@@ -38,7 +127,7 @@ export default function Index() {
           <div className={`animate-fade-in transition-all duration-500 ${hoveredBtn ? 'opacity-10' : 'opacity-100'}`}>
             <h1 className="text-4xl sm:text-6xl font-bold leading-tight tracking-tight text-white drop-shadow-lg">
               Taste the Future
-              <span className="block text-orange-400 mt-1">of Dining.</span>
+              <span className="block text-orange-400 mt-1">of <DiningWord /></span>
             </h1>
             <p className="mt-5 text-lg text-white/70 max-w-md mx-auto leading-relaxed">
               Scan. Browse. Order. Your table, your pace — a seamless restaurant experience from kitchen to you.
