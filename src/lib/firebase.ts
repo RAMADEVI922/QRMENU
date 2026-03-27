@@ -1,5 +1,4 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -18,26 +17,14 @@ const firebaseConfig = {
 const isFirebaseConfigured = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
 let app: any = null;
-let auth: any = null;
 let db: any = null;
 let storage: any = null;
 
 if (isFirebaseConfigured) {
   try {
     app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
-
-    // Sign in anonymously for Firestore access
-    // This is safe because Firestore rules control actual access
-    signInAnonymously(auth).catch((err: any) => {
-      // Silently fail - anonymous auth is optional
-      if (err?.code !== 'auth/operation-not-allowed') {
-        console.debug('Firebase anonymous auth:', err?.code);
-      }
-    });
-
     console.log('✅ Firebase initialized successfully');
   } catch (error) {
     console.warn('⚠️ Firebase initialization failed:', error);
@@ -46,4 +33,4 @@ if (isFirebaseConfigured) {
   console.warn('⚠️ Firebase configuration not found. Check .env.local');
 }
 
-export { app, auth, db, storage, isFirebaseConfigured };
+export { app, db, storage, isFirebaseConfigured };
