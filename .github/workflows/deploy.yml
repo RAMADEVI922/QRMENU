@@ -33,6 +33,21 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: AIzaSyDVw_vhFXStAKYWCA0lE3IMxmNDZrGwnqs
+          VITE_FIREBASE_AUTH_DOMAIN: qr-menu-19cd1.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: qr-menu-19cd1
+          VITE_FIREBASE_STORAGE_BUCKET: qr-menu-19cd1.appspot.com
+          VITE_FIREBASE_MESSAGING_SENDER_ID: "650478848908"
+          VITE_FIREBASE_APP_ID: 1:650478848908:web:add3a3598af1b82e9f64a9
+          VITE_FIREBASE_MEASUREMENT_ID: G-ZVKX512TRH
+          VITE_EMAILJS_SERVICE_ID: service_09uwzzv
+          VITE_EMAILJS_TEMPLATE_ID: template_it08278
+          VITE_EMAILJS_PUBLIC_KEY: -8lUNThYTTOhPa4eV
+          VITE_EMAILJS_OTP_TEMPLATE_ID: template_ovdk7vl
+          VITE_UPI_PHONEPE: 8008701388@ybl
+          VITE_UPI_GPAY: naiduboddeti0-2@okhdfcbank
+          VITE_UPI_PAYTM: 8008701388@ptsbi
 
       - uses: actions/configure-pages@v4
 
