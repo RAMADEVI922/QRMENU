@@ -3,38 +3,28 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { QrCode, Shield, UtensilsCrossed, ArrowRight } from 'lucide-react';
 
-// Free restaurant/chef ambience videos from Pixabay CDN (no auth needed)
-const BG_VIDEOS = [
-  'https://cdn.pixabay.com/video/2022/10/14/135335-762403756_large.mp4',
-  'https://cdn.pixabay.com/video/2021/04/01/69849-533616984_large.mp4',
-];
-
 export default function Index() {
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
 
-      {/* ── Background video ── */}
-      <div className="fixed inset-0 -z-10">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="w-full h-full object-cover transition-all duration-500"
-          style={{
-            filter: hoveredBtn
-              ? 'blur(12px) brightness(0.3) saturate(1.2)'
-              : 'blur(3px) brightness(0.45) saturate(1.2)',
-            transform: 'scale(1.05)',
-          }}
-        >
-          <source src={BG_VIDEOS[0]} type="video/mp4" />
-          <source src={BG_VIDEOS[1]} type="video/mp4" />
-        </video>
-        {/* Dark gradient overlay */}
-        <div className="absolute inset-0 bg-black/50" />
+      {/* ── Background ── */}
+      <div
+        className="fixed inset-0 -z-10 transition-all duration-500"
+        style={{
+          background: hoveredBtn
+            ? 'radial-gradient(ellipse at center, #1a1a1a 0%, #0a0a0a 100%)'
+            : 'radial-gradient(ellipse at 60% 40%, #2a1f0e 0%, #1c1410 30%, #111111 60%, #0a0a0a 100%)',
+          filter: hoveredBtn ? 'brightness(0.5)' : 'brightness(1)',
+        }}
+      >
+        {/* Subtle texture overlay */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 20% 80%, rgba(249,115,22,0.08) 0%, transparent 50%),
+                            radial-gradient(circle at 80% 20%, rgba(249,115,22,0.05) 0%, transparent 50%),
+                            radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 70%)`,
+        }} />
       </div>
 
       {/* ── Header ── */}
