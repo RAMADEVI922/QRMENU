@@ -38,19 +38,16 @@ function SweepText() {
         className="bubble-text"
         style={{
           backgroundImage: `linear-gradient(90deg,
-            white 0%,
-            white 15%,
-            ${curColor} 35%,
-            ${nextColor} 50%,
-            ${curColor} 65%,
-            white 85%,
-            white 100%
+            ${curColor} 0%,
+            ${nextColor} 40%,
+            ${curColor} 60%,
+            ${nextColor} 100%
           )`,
           animationDuration: '3s',
         }}
         onAnimationIteration={() => setColorIdx((i) => (i + 1) % COLORS.length)}
       >
-        Taste the Future
+        Future
       </span>
     </span>
   );
@@ -177,7 +174,7 @@ export default function Index() {
 
           <div className={`animate-fade-in transition-all duration-500 ${hoveredBtn ? 'opacity-10' : 'opacity-100'}`}>
             <h1 className="text-4xl sm:text-6xl font-bold leading-tight tracking-tight drop-shadow-lg">
-              <SweepText />
+              <span className="text-white">Taste the </span><SweepText />
               <span className="block text-orange-400 mt-1">of <DiningWord /></span>
             </h1>
             <p className="mt-5 text-lg text-white/70 max-w-md mx-auto leading-relaxed">
