@@ -125,8 +125,40 @@ export default function Index() {
         <div className="max-w-2xl text-center">
 
           <div className={`animate-fade-in transition-all duration-500 ${hoveredBtn ? 'opacity-10' : 'opacity-100'}`}>
-            <h1 className="text-4xl sm:text-6xl font-bold leading-tight tracking-tight text-white drop-shadow-lg">
-              Taste the Future
+            <h1 className="text-4xl sm:text-6xl font-bold leading-tight tracking-tight drop-shadow-lg">
+              <style>{`
+                @keyframes sweep-fill {
+                  0%   { width: 0%; }
+                  70%  { width: 100%; }
+                  100% { width: 100%; }
+                }
+                @keyframes sweep-reset {
+                  0%   { width: 100%; opacity: 1; }
+                  10%  { width: 100%; opacity: 0; }
+                  11%  { width: 0%; opacity: 0; }
+                  20%  { width: 0%; opacity: 1; }
+                  90%  { width: 100%; }
+                  100% { width: 100%; }
+                }
+                .sweep-container {
+                  position: relative;
+                  display: inline-block;
+                  color: white;
+                }
+                .sweep-overlay {
+                  position: absolute;
+                  top: 0; left: 0; bottom: 0;
+                  width: 0%;
+                  overflow: hidden;
+                  white-space: nowrap;
+                  color: #f97316;
+                  animation: sweep-reset 3s ease-in-out infinite;
+                }
+              `}</style>
+              <span className="sweep-container">
+                Taste the Future
+                <span className="sweep-overlay" aria-hidden="true">Taste the Future</span>
+              </span>
               <span className="block text-orange-400 mt-1">of <DiningWord /></span>
             </h1>
             <p className="mt-5 text-lg text-white/70 max-w-md mx-auto leading-relaxed">
