@@ -270,7 +270,7 @@ export default function Index() {
 
       {/* ── Footer ── */}
       <footer className="relative z-10 border-t border-white/10 py-5 text-center bg-black/20 backdrop-blur-sm">
-        <p className="text-xs text-white/40">QR Based Restaurant Menu System · Built with ReactJS</p>
+        <p className="text-xs text-white/40">Where every order tells a story — crafted with ❤️ &amp; ReactJS</p>
       </footer>
     </div>
   );
