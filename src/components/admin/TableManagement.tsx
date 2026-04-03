@@ -1,10 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRestaurantStore, type Table } from '@/store/restaurantStore';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Download, DownloadCloud, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fetchAllTableSessions } from '@/lib/firebaseService';
+import type { FirebaseTableSession } from '@/lib/firebaseService';
 
 export default function TableManagement() {
   const { tables, addTable, deleteTable } = useRestaurantStore();
@@ -12,6 +14,27 @@ export default function TableManagement() {
   const [tableNumber, setTableNumber] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const qrRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [sessions, setSessions] = useState<Record<string, FirebaseTableSession>>({});
+
+  useEffect(() => {
+    const load = () => fetchAllTableSessions().then((s) => {
+      const map: Record<string, FirebaseTableSession> = {};
+      s.forEach((sess) => { map[sess.tableId] = sess; });
+      setSessions(map);
+    }).catch(() => {});
+    load();
+    const t = setInterval(load, 15000);
+    return () => clearInterval(t);
+  }, []);
+
+  const getStatusBadge = (tableId: string) => {
+    const s = sessions[tableId]?.status;
+    if (!s || s === 'available') return { label: 'Available', color: 'bg-green-100 text-green-700' };
+    if (s === 'occupied') return { label: 'Occupied', color: 'bg-orange-100 text-orange-700' };
+    if (s === 'eating') return { label: 'Eating', color: 'bg-blue-100 text-blue-700' };
+    if (s === 'vacated') return { label: 'Vacated', color: 'bg-gray-100 text-gray-600' };
+    return { label: 'Available', color: 'bg-green-100 text-green-700' };
+  };
 
   const handleAddTable = (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,11 +274,17 @@ export default function TableManagement() {
                     <div className="inline-block bg-blue-500/10 px-4 py-2 rounded-full">
                       <p className="text-sm font-bold text-blue-600">Table {table.number}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Status: <span className={table.status === 'available' ? 'text-green-600 font-semibold' : 'text-orange-600 font-semibold'}>
-                        {table.status === 'available' ? 'Available' : 'Occupied'}
-                      </span>
-                    </p>
+                    <div className="mt-2">
+                      {(() => {
+                        const badge = getStatusBadge(table.id);
+                        return (
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${badge.color}`}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   {/* QR Code */}

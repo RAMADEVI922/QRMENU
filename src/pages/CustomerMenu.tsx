@@ -5,7 +5,7 @@ import { useRestaurantStore, type MenuItem } from '@/store/restaurantStore';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmOrderButton } from '@/components/ConfirmOrderButton';
-import { upsertNotification as upsertNotificationDirect, fetchBanners } from '@/lib/firebaseService';
+import { upsertNotification as upsertNotificationDirect, fetchBanners, claimTableSession, updateTableSessionStatus } from '@/lib/firebaseService';
 import type { FirebaseBanner } from '@/lib/firebaseService';
 
 function MenuItemCard({ item }: { item: MenuItem }) {
@@ -185,6 +185,26 @@ export default function CustomerMenu() {
   const nonVegRef = useRef<HTMLDivElement>(null);
   const [banners, setBanners] = useState<FirebaseBanner[]>([]);
   const [bannerIdx, setBannerIdx] = useState(0);
+  const [tableBlocked, setTableBlocked] = useState(false);
+
+  // Generate or retrieve a session ID for this browser tab
+  const sessionId = useRef<string>(() => {
+    const key = `session_${tableId}`;
+    let id = sessionStorage.getItem(key);
+    if (!id) { id = `S${Date.now()}_${Math.random().toString(36).slice(2)}`; sessionStorage.setItem(key, id); }
+    return id;
+  }).current as unknown as string;
+
+  // Claim the table on mount — block if already occupied by another session
+  useEffect(() => {
+    if (!tableId) return;
+    const key = `session_${tableId}`;
+    let id = sessionStorage.getItem(key);
+    if (!id) { id = `S${Date.now()}_${Math.random().toString(36).slice(2)}`; sessionStorage.setItem(key, id); }
+    claimTableSession(tableId, id).then((result) => {
+      if (result === 'occupied') setTableBlocked(true);
+    }).catch(() => {});
+  }, [tableId]);
 
   useEffect(() => {
     fetchBanners().then((b) => setBanners(b.filter((x) => x.active))).catch(() => {});
@@ -292,6 +312,25 @@ export default function CustomerMenu() {
       toast.error(`Failed to request bill: ${e?.message || e}`);
     }
   };
+
+  if (tableBlocked) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <div className="text-6xl mb-4">🚫</div>
+          <h2 className="text-2xl font-bold mb-2">Table Occupied</h2>
+          <p className="text-muted-foreground mb-2">
+            This table is currently occupied by another customer.
+          </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 font-semibold text-sm mt-2">
+            <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+            Currently Occupied
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">Please wait until the table is vacated or ask a waiter for assistance.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24 max-w-5xl mx-auto">

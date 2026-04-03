@@ -707,3 +707,67 @@ export async function deleteBanner(id: string): Promise<void> {
   if (!isFirebaseConfigured || !col) return;
   await deleteDoc(doc(col, id));
 }
+
+// ── Table Sessions (occupancy lock) ──────────────────────────────────────────
+export type TableOccupancyStatus = 'available' | 'occupied' | 'eating' | 'vacated';
+
+export interface FirebaseTableSession {
+  tableId: string;
+  status: TableOccupancyStatus;
+  sessionId: string;   // random token set when customer first scans
+  startedAt: number;
+}
+
+const getTableSessionsCollection = () => db ? collection(db, 'tableSessions') : null;
+
+export async function getTableSession(tableId: string): Promise<FirebaseTableSession | null> {
+  const col = getTableSessionsCollection();
+  if (!isFirebaseConfigured || !col) return null;
+  try {
+    const snap = await getDoc(doc(col, tableId));
+    return snap.exists() ? (snap.data() as FirebaseTableSession) : null;
+  } catch { return null; }
+}
+
+export async function claimTableSession(tableId: string, sessionId: string): Promise<'ok' | 'occupied'> {
+  const col = getTableSessionsCollection();
+  if (!isFirebaseConfigured || !col) return 'ok';
+  try {
+    const snap = await getDoc(doc(col, tableId));
+    if (snap.exists()) {
+      const existing = snap.data() as FirebaseTableSession;
+      // If occupied/eating by a DIFFERENT session, block
+      if (
+        (existing.status === 'occupied' || existing.status === 'eating') &&
+        existing.sessionId !== sessionId
+      ) {
+        return 'occupied';
+      }
+    }
+    // Claim or re-claim
+    await setDoc(doc(col, tableId), {
+      tableId,
+      sessionId,
+      status: 'occupied',
+      startedAt: Date.now(),
+    });
+    return 'ok';
+  } catch { return 'ok'; }
+}
+
+export async function updateTableSessionStatus(tableId: string, status: TableOccupancyStatus): Promise<void> {
+  const col = getTableSessionsCollection();
+  if (!isFirebaseConfigured || !col) return;
+  try {
+    await setDoc(doc(col, tableId), { status }, { merge: true });
+  } catch (e) { console.warn('[updateTableSessionStatus]', e); }
+}
+
+export async function fetchAllTableSessions(): Promise<FirebaseTableSession[]> {
+  const col = getTableSessionsCollection();
+  if (!isFirebaseConfigured || !col) return [];
+  try {
+    const snap = await getDocs(col);
+    return snap.docs.map((d) => d.data() as FirebaseTableSession);
+  } catch { return []; }
+}

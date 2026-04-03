@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useRestaurantStore } from '@/store/restaurantStore';
 import {
   fetchOrders, fetchNotifications, upsertNotification, upsertOrder,
-  fetchWaiters,
-  type FirebaseOrder, type FirebaseNotification,
+  fetchWaiters, updateTableSessionStatus, fetchAllTableSessions,
+  type FirebaseOrder, type FirebaseNotification, type FirebaseTableSession,
 } from '@/lib/firebaseService';
 import { sendBillEmail } from '@/lib/emailService';
 import { computePriority } from '@/lib/aiPriority';
@@ -79,6 +79,7 @@ export default function WaiterPanel() {
   const [emailSent, setEmailSent] = useState<Record<string, boolean>>({});
   const [snoozedOrders, setSnoozedOrders] = useState<Set<string>>(new Set());
   const [kitchenOpen, setKitchenOpen] = useState(false);
+  const [tableSessions, setTableSessions] = useState<Record<string, FirebaseTableSession>>({});
 
   const pendingOrders = (() => {
     const pending = orders.filter((o) => o.status === 'pending' && !snoozedOrders.has(o.id));
@@ -156,6 +157,12 @@ export default function WaiterPanel() {
     setRefreshing(true);
     try {
       const [fbOrders, fbNotifs] = await Promise.all([fetchOrders(), fetchNotifications()]);
+      // Also refresh table sessions
+      fetchAllTableSessions().then((s) => {
+        const map: Record<string, FirebaseTableSession> = {};
+        s.forEach((sess) => { map[sess.tableId] = sess; });
+        setTableSessions(map);
+      }).catch(() => {});
       const SIX_HOURS = 6 * 60 * 60 * 1000;
       const now = Date.now();
 
@@ -213,6 +220,7 @@ export default function WaiterPanel() {
     updateOrderStatus(orderId, 'served');
     toast.success(`Table ${tableId} — food ready, go deliver it!`);
     try {
+      await updateTableSessionStatus(tableId, 'eating');
       await upsertNotification({
         id: `N${tableId}_served_${Date.now()}`,
         tableId,
@@ -238,6 +246,7 @@ export default function WaiterPanel() {
           status: 'delivered',
           createdAt: new Date(order.createdAt).getTime(),
         } as FirebaseOrder);
+        await updateTableSessionStatus(tableId, 'eating');
       } catch (_) {}
     }
 
@@ -272,6 +281,7 @@ export default function WaiterPanel() {
     if (order) {
       try {
         await upsertOrder({ ...order, status: 'served', createdAt: new Date(order.createdAt).getTime() } as FirebaseOrder);
+        await updateTableSessionStatus(tableId, 'available');
       } catch (_) {}
     }
     try {
@@ -575,6 +585,17 @@ export default function WaiterPanel() {
                     <div>
                       <p className="font-bold text-lg">Table {order.tableId}</p>
                       <p className="text-xs text-muted-foreground">{order.items.length} items · ₹{order.total.toLocaleString('en-IN')}</p>
+                      {(() => {
+                        const s = tableSessions[order.tableId]?.status;
+                        if (!s || s === 'available') return null;
+                        const map: Record<string, string> = {
+                          occupied: 'bg-orange-100 text-orange-700',
+                          eating: 'bg-blue-100 text-blue-700',
+                          vacated: 'bg-gray-100 text-gray-500',
+                        };
+                        const labels: Record<string, string> = { occupied: '🪑 Occupied', eating: '🍽️ Eating', vacated: '✓ Vacated' };
+                        return <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${map[s]}`}>{labels[s]}</span>;
+                      })()}
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       {order.paymentMethod === 'online' && (
