@@ -709,7 +709,12 @@ export default function WaiterPanel() {
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
             <Zap className="h-4 w-4 text-orange-500" />
-            Pending Orders — AI Prioritized ({pendingOrders.length})
+            New Orders
+            {pendingOrders.length > 0 && (
+              <span className="ml-1 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {pendingOrders.length}
+              </span>
+            )}
           </h2>
           {pendingOrders.length === 0 ? (
             <p className="text-sm text-muted-foreground py-2">No pending orders.</p>
