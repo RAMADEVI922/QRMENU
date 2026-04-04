@@ -736,6 +736,13 @@ export async function claimTableSession(tableId: string, sessionId: string): Pro
     const snap = await getDoc(doc(col, tableId));
     if (snap.exists()) {
       const existing = snap.data() as FirebaseTableSession;
+      // If available or vacated — always allow, reset session
+      if (existing.status === 'available' || existing.status === 'vacated') {
+        await setDoc(doc(col, tableId), {
+          tableId, sessionId, status: 'occupied', startedAt: Date.now(),
+        });
+        return 'ok';
+      }
       // If occupied/eating by a DIFFERENT session, block
       if (
         (existing.status === 'occupied' || existing.status === 'eating') &&
@@ -743,13 +750,12 @@ export async function claimTableSession(tableId: string, sessionId: string): Pro
       ) {
         return 'occupied';
       }
+      // Same session re-scanning — allow
+      return 'ok';
     }
-    // Claim or re-claim
+    // No session exists yet — claim it
     await setDoc(doc(col, tableId), {
-      tableId,
-      sessionId,
-      status: 'occupied',
-      startedAt: Date.now(),
+      tableId, sessionId, status: 'occupied', startedAt: Date.now(),
     });
     return 'ok';
   } catch { return 'ok'; }

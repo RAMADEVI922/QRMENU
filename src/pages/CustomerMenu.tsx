@@ -187,20 +187,13 @@ export default function CustomerMenu() {
   const [bannerIdx, setBannerIdx] = useState(0);
   const [tableBlocked, setTableBlocked] = useState(false);
 
-  // Generate or retrieve a session ID for this browser tab
-  const sessionId = useRef<string>(() => {
-    const key = `session_${tableId}`;
-    let id = sessionStorage.getItem(key);
-    if (!id) { id = `S${Date.now()}_${Math.random().toString(36).slice(2)}`; sessionStorage.setItem(key, id); }
-    return id;
-  }).current as unknown as string;
-
   // Claim the table on mount — block if already occupied by another session
   useEffect(() => {
     if (!tableId) return;
+    // Always generate a fresh session ID on each new page load
     const key = `session_${tableId}`;
-    let id = sessionStorage.getItem(key);
-    if (!id) { id = `S${Date.now()}_${Math.random().toString(36).slice(2)}`; sessionStorage.setItem(key, id); }
+    const id = `S${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem(key, id);
     claimTableSession(tableId, id).then((result) => {
       if (result === 'occupied') setTableBlocked(true);
     }).catch(() => {});
