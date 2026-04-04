@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRestaurantStore, type Table } from '@/store/restaurantStore';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Download, DownloadCloud, QrCode } from 'lucide-react';
+import { Plus, Trash2, Download, DownloadCloud, QrCode, Unlock, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchAllTableSessions } from '@/lib/firebaseService';
+import { fetchAllTableSessions, updateTableSessionStatus } from '@/lib/firebaseService';
 import type { FirebaseTableSession } from '@/lib/firebaseService';
 
 export default function TableManagement() {
@@ -34,6 +34,22 @@ export default function TableManagement() {
     if (s === 'eating') return { label: 'Eating', color: 'bg-blue-100 text-blue-700' };
     if (s === 'vacated') return { label: 'Vacated', color: 'bg-gray-100 text-gray-600' };
     return { label: 'Available', color: 'bg-green-100 text-green-700' };
+  };
+
+  const handleToggleAvailability = async (tableId: string) => {
+    const current = sessions[tableId]?.status;
+    const isAvailable = !current || current === 'available' || current === 'vacated';
+    const newStatus = isAvailable ? 'occupied' : 'available';
+    try {
+      await updateTableSessionStatus(tableId, newStatus);
+      setSessions((prev) => ({
+        ...prev,
+        [tableId]: { ...prev[tableId], tableId, status: newStatus, sessionId: prev[tableId]?.sessionId || '', startedAt: prev[tableId]?.startedAt || Date.now() },
+      }));
+      toast.success(`Table ${tableId} marked as ${newStatus}`);
+    } catch {
+      toast.error('Failed to update table status');
+    }
   };
 
   const handleAddTable = (e: React.FormEvent) => {
@@ -320,6 +336,21 @@ export default function TableManagement() {
                       <Download className="h-4 w-4" />
                       Download
                     </Button>
+                    {(() => {
+                      const s = sessions[table.id]?.status;
+                      const isAvailable = !s || s === 'available' || s === 'vacated';
+                      return (
+                        <Button
+                          onClick={() => handleToggleAvailability(table.id)}
+                          variant="outline"
+                          size="sm"
+                          className={`flex-1 rounded-lg gap-2 ${isAvailable ? 'border-orange-300 text-orange-600 hover:bg-orange-50' : 'border-green-300 text-green-600 hover:bg-green-50'}`}
+                        >
+                          {isAvailable ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                          {isAvailable ? 'Mark Occupied' : 'Free Table'}
+                        </Button>
+                      );
+                    })()}
                     <Button
                       onClick={() => handleDeleteTable(table.id, table.number)}
                       variant="destructive"
